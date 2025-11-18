@@ -1,0 +1,26 @@
+## Interface: 120000, 110205
+## Title: !|cff008945Wildu|r|cff8ccd00Tools|r
+## Notes: Various automation tools
+## Author: Wildu
+## Version: 1.0
+## SavedVariables: WilduToolsDB
+## IconTexture: Interface\Addons\!WilduTools\Media\WilduTools
+
+loadLibs.xml
+Media/loadMedia.lua
+config.lua
+
+API.lua
+
+modules/actionBars.lua
+modules/addons.lua
+modules/automation.lua
+modules/cooldownManager.lua
+modules/cvars.lua
+modules/minimap.lua
+modules/nameplates.lua
+modules/ui.lua
+modules/updateTargetMacro.lua
+modules/wildu_ui.lua
+
+!WilduTools.lua
