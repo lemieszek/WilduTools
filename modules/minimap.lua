@@ -2,8 +2,10 @@ local _, ns = ...
 local addon = ns.Addon
 
 local Minimap = {}
+local DEBUG = ns.DEBUG
 
 function Minimap:Init(db)
+	DEBUG.startDebugTimer("MINIMAP_INIT_START")
     self.db = db
 	if self._wt_minimap_init then return true end
 	self._wt_minimap_init = true
@@ -142,6 +144,7 @@ function Minimap:Init(db)
 
 
 	self.obj = obj
+	DEBUG.checkpointDebugTimer("MINIMAP_INIT_DONE", "MINIMAP_INIT_START")
 	return true
 end
 

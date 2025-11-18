@@ -5,10 +5,12 @@ local WilduUI = {}
 
 local API = ns.API
 ns.WilduUI = WilduUI 
+local DEBUG = ns.DEBUG
 
 
 local rangeFrame = CreateFrame("Frame", "WilduTools Range Frame", UIParent)
 function WilduUI.InitilizeRangeFrame()
+	DEBUG.startDebugTimer("WILDUUI_INIT_RANGEFRAME_START")
 	if rangeFrame._wt_initialized then
 		return
 	end
@@ -119,12 +121,14 @@ function WilduUI.InitilizeRangeFrame()
 			end,
 		}
 	})
+	DEBUG.checkpointDebugTimer("WILDUUI_INIT_RANGEFRAME_DONE", "WILDUUI_INIT_RANGEFRAME_START")
 
 end
 
 -- Mountable area icon
 local mountFrame = CreateFrame("Frame", "WilduTools Mount Frame", UIParent)
 function WilduUI.InitilizeMountableAreaIndicator()
+	DEBUG.startDebugTimer("WILDUUI_INIT_MOUNTFRAME_START")
 	if mountFrame._wt_initialized then
 		return
 	end
@@ -216,4 +220,5 @@ function WilduUI.InitilizeMountableAreaIndicator()
 			end,
 		}
 	})
+	DEBUG.checkpointDebugTimer("WILDUUI_INIT_MOUNTFRAME_DONE", "WILDUUI_INIT_MOUNTFRAME_START")
 end

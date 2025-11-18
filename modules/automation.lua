@@ -2,6 +2,7 @@ local _, ns = ...
 local Automation = {}
 ns.Automation = Automation
 local addon = LibStub("AceAddon-3.0"):GetAddon("WilduTools")
+local DEBUG = ns.DEBUG
 
 -- Helper function to check if a value exists in a table
 local function tableContains(tbl, value)
@@ -101,6 +102,7 @@ end
 local Automation_InitializeGossips_Throttle = nil
 -- Initialize the gossips automation
 function Automation:InitializeGossips()
+    DEBUG.startDebugTimer("AUTOMATION_INITIALIZE_GOSSIPS_START")
     -- Only hook once to avoid duplicate calls
     if self._gossipHooked then return end
     self._gossipHooked = true
@@ -110,9 +112,11 @@ function Automation:InitializeGossips()
         end
         self:HandleGossip()
     end)
+    DEBUG.checkpointDebugTimer("AUTOMATION_INITIALIZE_GOSSIPS_DONE", "AUTOMATION_INITIALIZE_GOSSIPS_START")
 end 
 
 function Automation:InitAutoAcceptRole()
+    DEBUG.startDebugTimer("AUTOMATION_INIT_AUTOACCEPT_ROLE_START")
     if ns.db.profile.automation_autoAcceptGroupRoleEnabled then
         LFDRoleCheckPopupAcceptButton:SetScript("OnShow", function()
             local leader, leaderGUID  = "", ""
@@ -130,6 +134,7 @@ function Automation:InitAutoAcceptRole()
     else
         LFDRoleCheckPopupAcceptButton:SetScript("OnShow", nil)
     end
+    DEBUG.checkpointDebugTimer("AUTOMATION_INIT_AUTOACCEPT_ROLE_DONE", "AUTOMATION_INIT_AUTOACCEPT_ROLE_START")
 end
 
 local groupInviteFrame = CreateFrame("FRAME")
@@ -155,6 +160,7 @@ groupInviteFrame:SetScript("OnEvent", function()
     end
 end)
 function Automation:InitAutoAcceptGroupInvite()
+    DEBUG.startDebugTimer("AUTOMATION_INIT_AUTOACCEPT_INVITE_START")
     if ns.db.profile.automation_autoAcceptGroupInviteEnabled then
         groupInviteFrame:RegisterEvent("GROUP_INVITE_CONFIRMATION")
         groupInviteFrame:RegisterEvent("PARTY_INVITE_REQUEST")
@@ -164,21 +170,26 @@ function Automation:InitAutoAcceptGroupInvite()
         groupInviteFrame:UnregisterEvent("GROUP_INVITE_CONFIRMATION")
         groupInviteFrame:UnregisterEvent("PARTY_INVITE_REQUEST")
     end
+    DEBUG.checkpointDebugTimer("AUTOMATION_INIT_AUTOACCEPT_INVITE_DONE", "AUTOMATION_INIT_AUTOACCEPT_INVITE_START")
 end
 
 -- todo on load and on spec change event
 function Automation:SetDefaultEditModeManagerLayout()
+    DEBUG.startDebugTimer("AUTOMATION_SET_DEFAULT_EDITMODE_LAYOUT_START")
     if EditModeManagerFrame and EditModeManagerFrame.layoutInfo and (
         EditModeManagerFrame.layoutInfo.activeLayout == 1 or EditModeManagerFrame.layoutInfo.activeLayout == 2
     ) then
         EditModeManagerFrame:SelectLayout(3) 
     end
+    DEBUG.checkpointDebugTimer("AUTOMATION_SET_DEFAULT_EDITMODE_LAYOUT_DONE", "AUTOMATION_SET_DEFAULT_EDITMODE_LAYOUT_START")
 end
 
 function Automation:SetFormPreservation(enabled)
+    DEBUG.startDebugTimer("AUTOMATION_SET_FORM_PRESERVATION_START")
     if enabled then
         SetCVar("autoUnshift", "0")
     else
         SetCVar("autoUnshift", "1")
     end
+    DEBUG.checkpointDebugTimer("AUTOMATION_SET_FORM_PRESERVATION_DONE", "AUTOMATION_SET_FORM_PRESERVATION_START")
 end

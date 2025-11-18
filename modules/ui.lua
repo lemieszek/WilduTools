@@ -2,8 +2,10 @@ local _, ns = ...
 local LSM = LibStub("LibSharedMedia-3.0")
 local UI = {}
 ns.UI = UI 
+local DEBUG = ns.DEBUG
 
 function UI.resizeBlizzardObjectiveTracker(value)
+  ns.DEBUG.startDebugTimer("UI_RESIZE_OBJECTIVE_TRACKER_START")
   -- if (SuperTrackedFrame) then
   --   -- SuperTrackedFrame:SetScale(1.5)
   --   SuperTrackedFrame.Arrow:SetScale(1.5)
@@ -17,22 +19,27 @@ function UI.resizeBlizzardObjectiveTracker(value)
   if (_G["ObjectiveTrackerFrame"] ~= nil) then
     _G["ObjectiveTrackerFrame"]:SetScale(value or 0.9)
   end
+  DEBUG.checkpointDebugTimer("UI_RESIZE_OBJECTIVE_TRACKER_DONE", "UI_RESIZE_OBJECTIVE_TRACKER_START")
 end
 
 function UI.cleanupObjectiveTracker()
+  ns.DEBUG.startDebugTimer("UI_CLEANUP_OBJECTIVE_TRACKER_START")
   if (_G["ObjectiveTrackerFrame"] ~= nil) then
     _G["ObjectiveTrackerFrame"].Header.Background:Hide()
     _G["ObjectiveTrackerFrame"].Header.Text:Hide()
   end
+  DEBUG.checkpointDebugTimer("UI_CLEANUP_OBJECTIVE_TRACKER_DONE", "UI_CLEANUP_OBJECTIVE_TRACKER_START")
 end
 
 function UI.hideBlizzardBagAndReagentFrames()
+  ns.DEBUG.startDebugTimer("UI_HIDE_BAG_REAGENT_FRAMES_START")
   if (_G["CharacterReagentBag0Slot"] ~= nil) then
     CharacterReagentBag0Slot:Hide()
   end
   if (_G["BagsBar"] ~= nil) then
     BagsBar:Hide()
   end
+  DEBUG.checkpointDebugTimer("UI_HIDE_BAG_REAGENT_FRAMES_DONE", "UI_HIDE_BAG_REAGENT_FRAMES_START")
 end
 
 -- @deprecated @unused
@@ -43,6 +50,7 @@ function UI.lowerBlizzardGryphons()
 end
 
 function UI.changeFriendlyNamesFonts()
+  ns.DEBUG.startDebugTimer("UI_CHANGE_FRIENDLY_NAMES_FONTS_START")
   local FONT = LSM:Fetch('font', 'Naowh')
   local function SetFont(obj, font, size, style)
     if not obj then return end
@@ -53,12 +61,15 @@ function UI.changeFriendlyNamesFonts()
   SetFont(_G.SystemFont_NamePlateFixed, FONT, 9, 'OUTLINE')
   SetFont(_G.SystemFont_LargeNamePlate, FONT, 11, 'OUTLINE')
   SetFont(_G.SystemFont_LargeNamePlateFixed, FONT, 11, 'OUTLINE')
+  ns.DEBUG.checkpointDebugTimer("UI_CHANGE_FRIENDLY_NAMES_FONTS_DONE", "UI_CHANGE_FRIENDLY_NAMES_FONTS_START")
 end
 
 function UI.hideScreenshotText()
+  ns.DEBUG.startDebugTimer("UI_HIDE_SCREENSHOT_TEXT_START")
   ActionStatus:UnregisterEvent("SCREENSHOT_STARTED")
   ActionStatus:UnregisterEvent("SCREENSHOT_SUCCEEDED")
   ActionStatus:UnregisterEvent("SCREENSHOT_FAILED")
+  ns.DEBUG.checkpointDebugTimer("UI_HIDE_SCREENSHOT_TEXT_DONE", "UI_HIDE_SCREENSHOT_TEXT_START")
 end
 
 function UI.setBuffExpandState(value)
@@ -72,6 +83,7 @@ end
 local enhanceAltPowerBarStatusTextThrottle = nil
 
 function UI.enhanceAltPowerBarStatusText()
+  DEBUG.startDebugTimer("UI_ENHANCE_ALTPOWER_START")
   if PlayerPowerBarAlt then
     if PlayerPowerBarAlt._enhanceAltPowerBarStatusText_hooked then return end
     PlayerPowerBarAlt._enhanceAltPowerBarStatusText_hooked = true
@@ -116,12 +128,14 @@ function UI.enhanceAltPowerBarStatusText()
       end)
     end
   end
+  DEBUG.checkpointDebugTimer("UI_ENHANCE_ALTPOWER_DONE", "UI_ENHANCE_ALTPOWER_START")
 end
 
 
 function UI.hideTooltipUnitFrameInstruction()
   if UI._wt_enhancedTooltips then return end
   UI._wt_enhancedTooltips = true
+  ns.DEBUG.startDebugTimer("UI_HIDE_TOOLTIP_UNITFRAME_START")
   -- Hide the default GameTooltipStatusBar (health bar)
   GameTooltipStatusBarTexture:SetTexture("")
   -- Remove the right-click for frame settings instruction (UNIT_POPUP_RIGHT_CLICK)
@@ -134,6 +148,7 @@ function UI.hideTooltipUnitFrameInstruction()
   -- hooksecurefunc("GameTooltip_SetDefaultAnchor", function(self,parent) 
   --     self:SetOwner(parent,"ANCHOR_NONE")
   -- end)    
+  DEBUG.checkpointDebugTimer("UI_HIDE_TOOLTIP_UNITFRAME_DONE", "UI_HIDE_TOOLTIP_UNITFRAME_START")
 end
 
 ---------------------------------
@@ -162,8 +177,12 @@ local linkTypes = {
  }
 
 function UI.TooltipChatLinks()
+  DEBUG.startDebugTimer("UI_TOOLTIP_CHAT_LINKS_START")
   -- Tooltip in chat hook
-  if tooltipChatLinksInitialized then return end
+  if tooltipChatLinksInitialized then
+    DEBUG.checkpointDebugTimer("UI_TOOLTIP_CHAT_LINKS_SKIPPED", "UI_TOOLTIP_CHAT_LINKS_START")
+    return
+  end
   tooltipChatLinksInitialized = true
   
   local _G = getfenv(0)
@@ -175,6 +194,7 @@ function UI.TooltipChatLinks()
     LazyHelper.ChatframeOrig2[LazyHelper_ChatframeItemTooltip] = LazyHelper_ChatframeItemTooltip:GetScript("OnHyperlinkLeave")
     LazyHelper_ChatframeItemTooltip:SetScript("OnHyperlinkLeave", function(LazyHelper_ChatframeItemTooltip, LazyHelper_link, ...) LazyHelper:OnHyperlinkLeave(LazyHelper_ChatframeItemTooltip, LazyHelper_link, ...) end)
   end
+  DEBUG.checkpointDebugTimer("UI_TOOLTIP_CHAT_LINKS_DONE", "UI_TOOLTIP_CHAT_LINKS_START")
 end
 
 function LazyHelper:OnHyperlinkEnter(ItemTooltip, link, ...)
@@ -208,6 +228,7 @@ end
 ---------------------------------
 
 function UI.addCastTimeTextOutline()
+  DEBUG.startDebugTimer("UI_ADD_CASTTIME_OUTLINE_START")
   if PlayerCastingBarFrame then
     if not PlayerCastingBarFrame._wt_blizzUI_addCastTimeTextOutline_hooked then
       PlayerCastingBarFrame._wt_blizzUI_addCastTimeTextOutline_hooked = true
@@ -219,6 +240,7 @@ function UI.addCastTimeTextOutline()
       end)
     end
   end
+  DEBUG.checkpointDebugTimer("UI_ADD_CASTTIME_OUTLINE_DONE", "UI_ADD_CASTTIME_OUTLINE_START")
 end
 
 
@@ -288,6 +310,7 @@ function UI.hideExtraActionBarArtwork()
 end
 
 function UI.hidePartyRaidFramesTitles()
+	DEBUG.startDebugTimer("UI_HIDE_PARTY_RAID_TITLES_START")
 	if CompactPartyFrameTitle then
 		CompactPartyFrameTitle:SetAlpha(0)
     CompactPartyFrameTitle:Hide()
@@ -299,6 +322,7 @@ function UI.hidePartyRaidFramesTitles()
       titleFrame:Hide()
 		end
 	end
+	DEBUG.checkpointDebugTimer("UI_HIDE_PARTY_RAID_TITLES_DONE", "UI_HIDE_PARTY_RAID_TITLES_START")
 end
 -- Experimental feature - move frames around to remove gaps when groups are horizontal
   --[[

@@ -3,6 +3,7 @@ local addon = ns.Addon
 
 -- Load modules
 
+local DEBUG = ns.DEBUG
 local API = ns.API
 
 local ActionBars = ns.ActionBars
@@ -21,6 +22,9 @@ local config = LibStub("AceConfig-3.0")
 local configDialog = LibStub("AceConfigDialog-3.0")
 local runner = nil
 
+-- Start file read timer
+DEBUG.startDebugTimer("FILE_START_TIME")
+
 -- helper to check enabled settings (file scope so event handlers can use it)
 local function isEnabled(key)
 	if not addon or not addon.db or not addon.db.profile then
@@ -37,35 +41,43 @@ local function getSettingValue(key)
 	return addon.db.profile[key]
 end
 
+DEBUG.startDebugTimer("PLAYER_LOGIN_FRAME_INIT")
 local PlayerLoginFrame = CreateFrame("Frame", nil, UIParent)
 PlayerLoginFrame:RegisterEvent("PLAYER_LOGIN")
 PlayerLoginFrame:SetScript("OnEvent", function()
+    DEBUG.startDebugTimer("PLAYER_LOGIN_EVENT_START")
 	Automation:InitializeGossips()
 	Automation:InitAutoAcceptRole()
 	Automation:InitAutoAcceptGroupInvite()
 	Automation:SetDefaultEditModeManagerLayout()
+    DEBUG.checkpointDebugTimer("PLAYER_LOGIN_EVENT_AUTOMATION_DONE", "PLAYER_LOGIN_EVENT_START")
 
 	C_Timer.After(1, function()
+        DEBUG.startDebugTimer("PLAYER_LOGIN_DELAYED_START")
 		WilduUI.InitilizeRangeFrame()
 		WilduUI.InitilizeMountableAreaIndicator()
 		if isEnabled("general_alwaysEnableAllActionBars") then
 			CVars.enableAllActionBars()
 		end
+        DEBUG.checkpointDebugTimer("PLAYER_LOGIN_DELAYED_DONE", "PLAYER_LOGIN_DELAYED_START")
 	end)
+    DEBUG.checkpointDebugTimer("PLAYER_LOGIN_EVENT_END", "PLAYER_LOGIN_EVENT_START")
 end)
+DEBUG.checkpointDebugTimer("PLAYER_LOGIN_FRAME_INIT_DONE", "PLAYER_LOGIN_FRAME_INIT")
 
+DEBUG.startDebugTimer("INTERFACE_SCALE_FRAME_INIT")
 local InterfaceScaleFrame = CreateFrame("Frame", nil, UIParent)
 InterfaceScaleFrame:RegisterEvent("VARIABLES_LOADED")
 InterfaceScaleFrame:RegisterEvent("PLAYER_LOGIN")
 InterfaceScaleFrame:RegisterEvent("UI_SCALE_CHANGED")
 InterfaceScaleFrame:SetScript("OnEvent", function()
+    DEBUG.startDebugTimer("INTERFACE_SCALE_EVENT_START")
 	CVars.setInterfaceScale()
 	if isEnabled("blizzUI_chatTooltipOnChatLinks") then
 		pcall(function()
 			UI.TooltipChatLinks()
 		end)
 	end
-
 	-- TODO do module function
 	-- CHAT_FRAME_BUTTON_FRAME_MIN_ALPHA = 1.0
 	-- CHAT_FRAME_TAB_SELECTED_MOUSEOVER_ALPHA = 1.0
@@ -74,33 +86,22 @@ InterfaceScaleFrame:SetScript("OnEvent", function()
 	CHAT_FRAME_TAB_ALERTING_NOMOUSE_ALPHA = 1.0
 	-- CHAT_FRAME_TAB_NORMAL_MOUSEOVER_ALPHA = 1.0
 	-- CHAT_FRAME_TAB_NORMAL_NOMOUSE_ALPHA = 1.0
-	-- for WindowNumber = 1, NUM_CHAT_WINDOWS do
-	-- 	local Tab = _G["ChatFrame" .. WindowNumber .. "Tab"]
-	-- 	if Tab then
-	-- 		Tab:SetAlpha(1)
-	-- 	end
-	-- end
-	-- if (runner) then
-	--     runner:Cancel()
-	-- end
-	-- runner = C_Timer.NewTicker(0.1, function()
-	--     for WindowNumber=1, NUM_CHAT_WINDOWS do
-	--         local Tab = _G["ChatFrame"..WindowNumber.."Tab"]
-	--         if Tab then
-	--             Tab:SetAlpha(1)
-	--         end
-	--     end
-	-- end)
+	
+    DEBUG.checkpointDebugTimer("INTERFACE_SCALE_EVENT_END", "INTERFACE_SCALE_EVENT_START")
 end)
+DEBUG.checkpointDebugTimer("INTERFACE_SCALE_FRAME_INIT_DONE", "INTERFACE_SCALE_FRAME_INIT")
 
+DEBUG.startDebugTimer("INIT_FRAME_INIT")
 local InitFrame = CreateFrame("Frame", nil, UIParent)
 InitFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 InitFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 InitFrame:SetScript("OnEvent", function()
-
+    DEBUG.startDebugTimer("INIT_FRAME_EVENT_START")
 	C_Timer.After(1, function()
+        DEBUG.startDebugTimer("INIT_FRAME_DELAYED_START")
 		Addons.scaleAddOnsSize()
 		Addons.checkForWAModels()
+        -- DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_ADDONS_DONE", "INIT_FRAME_DELAYED_START")
 		
 		if isEnabled("actionBars_shortenKeybinds") then ActionBars.changeShortenKeybindText() end
 		if isEnabled("blizzUI_addCastTimeTextOutline") then UI.addCastTimeTextOutline() end
@@ -114,6 +115,7 @@ InitFrame:SetScript("OnEvent", function()
 		if isEnabled("blizzUI_hideTooltipUnitFrameInstruction") then UI.hideTooltipUnitFrameInstruction() end
 		
 		if isEnabled("blizzUI_resizeBlizzardObjectiveTracker") then UI.resizeBlizzardObjectiveTracker(getSettingValue(blizzUI_resizeBlizzardObjectiveTrackerRange)) end
+		DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_UI_TWEAKS_DONE", "INIT_FRAME_DELAYED_START")
 		
 		if isEnabled("actionBars_disableMouseOnActionBars") and (InCombatLockdown() or not isEnabled("actionBars_disableMouseOnActionBars_onlyInCombat")) then
 
@@ -148,12 +150,17 @@ InitFrame:SetScript("OnEvent", function()
 				CooldownManager.centerEssentialCooldownViewerAnchor()
 			end
 		end
+        DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_ACTIONBARS_DONE", "INIT_FRAME_DELAYED_START")
 	end)
+    DEBUG.checkpointDebugTimer("INIT_FRAME_EVENT_END", "INIT_FRAME_EVENT_START")
 end)
+
+DEBUG.startDebugTimer("COMBAT_FRAME_INIT")
 local CombatFrame = CreateFrame("Frame")
 CombatFrame:RegisterEvent("PLAYER_REGEN_DISABLED") -- Fired when you enter combat
 CombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED") -- Fired when you leave combat
 CombatFrame:SetScript("OnEvent", function(_self, event)
+    DEBUG.startDebugTimer("COMBAT_FRAME_EVENT_START")
 	if event == "PLAYER_REGEN_DISABLED" then
 		-- entering combat
 		if isEnabled("automation_druidFormCombatPreservation") then
@@ -190,8 +197,13 @@ CombatFrame:SetScript("OnEvent", function(_self, event)
 			if isEnabled("partyRaid_hidePartyRaidFramesTitles") then UI.hidePartyRaidFramesTitles() end
 		end
 	end
+    DEBUG.checkpointDebugTimer("COMBAT_FRAME_EVENT_END", "COMBAT_FRAME_EVENT_START")
 end)
+DEBUG.checkpointDebugTimer("COMBAT_FRAME_INIT_DONE", "COMBAT_FRAME_INIT")
+
+DEBUG.startDebugTimer("EDIT_MODE_CALLBACKS_INIT")
 EventRegistry:RegisterCallback("EditMode.Enter", function()
+    DEBUG.startDebugTimer("EDIT_MODE_ENTER_START")
 	if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
 		UI.hidePartyRaidFramesTitles()
 	end
@@ -201,8 +213,10 @@ EventRegistry:RegisterCallback("EditMode.Enter", function()
 	if isEnabled("cooldownManager_centerEssentialAnchor") then
 		CooldownManager.centerEssentialCooldownViewerAnchor()
 	end
+    DEBUG.checkpointDebugTimer("EDIT_MODE_ENTER_END", "EDIT_MODE_ENTER_START")
 end)
 EventRegistry:RegisterCallback("EditMode.Exit", function()
+    DEBUG.startDebugTimer("EDIT_MODE_EXIT_START")
 	if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
 		UI.hidePartyRaidFramesTitles()
 	end
@@ -212,17 +226,23 @@ EventRegistry:RegisterCallback("EditMode.Exit", function()
 	if isEnabled("cooldownManager_centerEssentialAnchor") then
 		CooldownManager.centerEssentialCooldownViewerAnchor()
 	end
+    DEBUG.checkpointDebugTimer("EDIT_MODE_EXIT_END", "EDIT_MODE_EXIT_START")
 end)
+DEBUG.checkpointDebugTimer("EDIT_MODE_CALLBACKS_INIT_DONE", "EDIT_MODE_CALLBACKS_INIT")
 
 local secondThrotthle = GetTime() + 10 -- throttle to avoid errors on world loading
 local lastTimeSwim = 0
 local UpdateFrameLastUpdate = nil
+
+DEBUG.startDebugTimer("UPDATE_FRAME_INIT")
 local UpdateFrame = CreateFrame("Frame")
 UpdateFrame:SetScript("OnUpdate", function()
+    DEBUG.startDebugTimer("UPDATE_FRAME_ONUPDATE_START", "UPDATE_FRAME_INIT") -- Re-start for each update call
 	-- TODO work in progress
-	if GetNumExpansions() == 12 then		
-		UI.betterTexturesForBlizzPersonalResourceDisplayFrame()
-	end
+	-- if GetNumExpansions() == 12 then		
+	-- 	UI.betterTexturesForBlizzPersonalResourceDisplayFrame()
+	-- end
+    -- DEBUG.checkpointDebugTimer("UPDATE_FRAME_ONUPDATE_EXPANSION_CHECK_DONE", "UPDATE_FRAME_ONUPDATE_START")
 
 	-- if out of combat, not in challenge mode, not in instance, can fly, is not swimming then
 	if IsSwimming() then
@@ -245,6 +265,7 @@ UpdateFrame:SetScript("OnUpdate", function()
 			CancelShapeshiftForm()
 		end
 	end
+    -- DEBUG.checkpointDebugTimer("UPDATE_FRAME_ONUPDATE_DRUID_AUTOMATION_DONE", "UPDATE_FRAME_ONUPDATE_EXPANSION_CHECK_DONE")
 
 	if isEnabled("cooldownManager_centerBuffIcons") then 
 		if GetNumExpansions() == 12 then
@@ -286,6 +307,8 @@ UpdateFrame:SetScript("OnUpdate", function()
 			itemFrame:SetPoint(anchorPoint, BuffIconCooldownViewer, anchorPoint, x, y)
 		end
 	end 
+    -- DEBUG.checkpointDebugTimer("UPDATE_FRAME_ONUPDATE_COOLDOWN_MANAGER_DONE", "UPDATE_FRAME_ONUPDATE_DRUID_AUTOMATION_DONE")
+
 	if UpdateFrameLastUpdate ~= nil and UpdateFrameLastUpdate > GetTime() - 0.1 then
 		return
 	end
@@ -305,12 +328,17 @@ UpdateFrame:SetScript("OnUpdate", function()
 			CooldownManager.centerEssentialCooldownViewerAnchor()
 		end
 	end
+    -- DEBUG.checkpointDebugTimer("UPDATE_FRAME_ONUPDATE_END", "UPDATE_FRAME_ONUPDATE_COOLDOWN_MANAGER_DONE")
 end)
+DEBUG.checkpointDebugTimer("UPDATE_FRAME_INIT_DONE", "UPDATE_FRAME_INIT")
+
 
 local RaidChangedFrameLastUpdate = nil
+DEBUG.startDebugTimer("RAID_CHANGED_FRAME_INIT")
 local RaidChangedFrame = CreateFrame("Frame")
 RaidChangedFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 RaidChangedFrame:SetScript("OnEvent", function()
+    DEBUG.startDebugTimer("RAID_CHANGED_FRAME_EVENT_START")
 	if RaidChangedFrameLastUpdate ~= nil and RaidChangedFrameLastUpdate > GetTime() - 1.0 then
 		return
 	end
@@ -319,13 +347,18 @@ RaidChangedFrame:SetScript("OnEvent", function()
 			UI.hidePartyRaidFramesTitles()
 		end
 	end
+    DEBUG.checkpointDebugTimer("RAID_CHANGED_FRAME_EVENT_END", "RAID_CHANGED_FRAME_EVENT_START")
 end)
+DEBUG.checkpointDebugTimer("RAID_CHANGED_FRAME_INIT_DONE", "RAID_CHANGED_FRAME_INIT")
+
 
 -- Addon initialization
 function addon:OnInitialize()
+    DEBUG.startDebugTimer("ADDON_ON_INITIALIZE_START")
 	-- Initialize database
 	self.db = LibStub("AceDB-3.0"):New("WilduToolsDB", ns.DEFAULT_SETTINGS, true)
 	ns.db = self.db
+
 	-- Register slash commands
 	self:RegisterChatCommand("wildutools", function()
 		self:ShowConfig()
@@ -457,10 +490,8 @@ function addon:OnInitialize()
 								name = "Shorten Keybind Text",
 								desc = "Shorten displayed keybind text on action buttons",
 								descStyle = "inline",
-								get = function(info) 		return self.db.profile.actionBars_shortenKeybinds
-			end,
-								set = function(info, v) 		self.db.profile.actionBars_shortenKeybinds = v
-			end,
+								get = function(info) 		return self.db.profile.actionBars_shortenKeybinds end,
+								set = function(info, v) 		self.db.profile.actionBars_shortenKeybinds = v end,
 							},
 							disableMouseOnActionBars = {
 								type = "toggle",
@@ -1159,24 +1190,7 @@ function addon:OnInitialize()
 										desc = "Toggle showing dungeon entrances on the world map",
 										get = function(info) return CVars.getCVar("showDungeonEntrancesOnMap") end,
 										set = function(info, v) CVars.setCVar("showDungeonEntrancesOnMap", v) end,
-									},
-									-- advancedCombatLogging
-									-- motionSicknessLandscapeDarkening
-									-- DisableAdvancedFlyingFullScreenEffects
-									-- DisableAdvancedFlyingVelocityVFX
-									-- ResampleAlwaysSharpen
-									-- whisperMode
-									-- autolootDefault
-									-- AutoPushSpellToActionBar
-									-- countdownForCooldowns
-									-- showDungeonEntrancesOnMap
-
-									-- range:
-									-- spellVisualDensityFilterSetting
-									-- spellVisuals
-									-- spellClutter
-									-- RAIDspellClutter
-									-- unitClutterPlayerThreshold
+									}
 								}
 							}
 						}
@@ -1192,7 +1206,6 @@ function addon:OnInitialize()
 	self.optionsFrames.general = configDialog:AddToBlizOptions("WilduTools", "WilduTools", nil, "general")
 
 
-
 	-- create minimap icon via module
 	if Minimap then
 		local ok, err = Minimap:Init(self.db)
@@ -1205,9 +1218,9 @@ function addon:OnInitialize()
 	else 
 		print("no minimap")
 	end
-
-	-- self:Print("Loaded. Type /wt for help.")
+	DEBUG.checkpointDebugTimer("ADDON_ON_INITIALIZE_END", "ADDON_ON_INITIALIZE_START")
 end
+
 
 function addon:ShowConfig()
 	if InCombatLockdown() then

@@ -1,9 +1,11 @@
 local _, ns = ...
 local Nameplates = {}
 ns.Nameplates = Nameplates
+local DEBUG = ns.DEBUG
 
 -- unused
 function Nameplates.HideDefaultBuffFrame()
+    DEBUG.startDebugTimer("NAMEPLATES_HIDE_BUFFFRAME_START")
     if Nameplates._wt_hooked then return end
     Nameplates._wt_hooked = true
     local eventFrame = CreateFrame("Frame")
@@ -23,4 +25,5 @@ function Nameplates.HideDefaultBuffFrame()
     end
 
     eventFrame:SetScript("OnEvent", function(self, event, ...) eventHandlers[event](self, ...) end)
+    DEBUG.checkpointDebugTimer("NAMEPLATES_HIDE_BUFFFRAME_DONE", "NAMEPLATES_HIDE_BUFFFRAME_START")
   end

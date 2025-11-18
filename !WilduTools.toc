@@ -10,6 +10,7 @@ loadLibs.xml
 Media/loadMedia.lua
 config.lua
 
+debug.lua
 API.lua
 
 modules/actionBars.lua

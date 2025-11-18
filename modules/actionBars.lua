@@ -1,9 +1,11 @@
 local _, ns = ...
 local ActionBars = {}
 ns.ActionBars = ActionBars
+local DEBUG = ns.DEBUG
 
 local changeShortenKeybindTextHooked = false
 function ActionBars.changeShortenKeybindText()
+  DEBUG.startDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_START")
   local map = {
     ["Middle Mouse"] = "M3",
     ["Mouse Wheel Down"] = "DWN",
@@ -57,9 +59,11 @@ function ActionBars.changeShortenKeybindText()
     for k, v in pairs(patterns) do
       text = text:gsub(k, v)
     end
-    hotkey:SetText(map[text] or text)
+    if map[text] or text then
+      hotkey:SetText(map[text] or text)
+    end
   end
-
+  DEBUG.checkpointDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_PRE_HOOK", "ACTIONBARS_CHANGE_SHORTEN_KEYBIND_START")
   if not changeShortenKeybindTextHooked then
     changeShortenKeybindTextHooked = true
     for _, bar in pairs(bars) do
@@ -69,39 +73,25 @@ function ActionBars.changeShortenKeybindText()
     end
     ActionBarButtonEventsFrame:GetScript("OnEvent")(ActionBarButtonEventsFrame, "UPDATE_BINDINGS")
   end
-  -- HIDE KEYBIND TEXT FOR MULTI 6 AND 7 BUTTONS (1-12)
-  for j = 5,7 do
-    for i = 1, 12 do
-      local button = _G["MultiBar"..j.."Button"..i] 
-      if button then
-        local hotkey = _G[button:GetName().."HotKey"]
-        if hotkey then
-          hotkey:Hide()
-          hotkey:SetAlpha(0)
-        end
-      end
-    end
-  end
+  DEBUG.checkpointDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_POST_HOOK", "ACTIONBARS_CHANGE_SHORTEN_KEYBIND_PRE_HOOK")
+  -- HIDE KEYBIND TEXT FOR ACTION BAR 7 BUTTONS (1-12)
+  -- TODO make option for it
+  -- for j = 5 do
+  --   for i = 1, 12 do
+  --     local button = _G["MultiBar"..j.."Button"..i] 
+  --     if button then
+  --       local hotkey = _G[button:GetName().."HotKey"]
+  --       if hotkey then
+  --         hotkey:Hide()
+  --         hotkey:SetAlpha(0)
+  --       end
+  --     end
+  --   end
+  -- end
+  DEBUG.checkpointDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_POST_HIDE_HOTKEY", "ACTIONBARS_CHANGE_SHORTEN_KEYBIND_POST_HOOK")
+  DEBUG.checkpointDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_DONE", "ACTIONBARS_CHANGE_SHORTEN_KEYBIND_START")
 end
 
-
-function ActionBars.disableMouseOnActionBar7() -- ActionBar 7 is actually MultiBar6
-  for i = 1, 12 do
-    local button = _G["MultiBar6Button"..i] 
-    if button then
-      button:EnableMouse(false)
-    end
-  end
-end
-
-function ActionBars.enableMouseOnActionBar7()
-  for i = 1, 12 do
-    local button = _G["MultiBar6Button"..i] 
-    if button then
-      button:EnableMouse(true)
-    end
-  end
-end
 
 -- Generic per-bar toggle helpers. buttonPrefix is e.g. "ActionButton", "MultiBarBottomLeftButton", etc.
 function ActionBars.disableMouseOnBar(buttonPrefix)

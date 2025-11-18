@@ -1,6 +1,7 @@
 local _, ns = ...
 local CVars = {}
 ns.CVars = CVars
+local DEBUG = ns.DEBUG
 
 local function stringToBoolean(value) return value == "1" end
 
@@ -75,7 +76,9 @@ function CVars.setDefaults()
 end
 
 -- Apply CVars using values from the addon's saved variables (db.profile)
+-- deprecated
 function CVars.setCVars(db)
+  DEBUG.startDebugTimer("CVARS_SETCVARS_START")
   if not db or not db.profile then return end
   local p = db.profile
 
@@ -142,6 +145,8 @@ function CVars.setCVars(db)
   if p.cvars_showDungeonEntrancesOnMap ~= nil then
     C_CVar.SetCVar("showDungeonEntrancesOnMap", p.cvars_showDungeonEntrancesOnMap and 1 or 0)
   end
+  
+  DEBUG.checkpointDebugTimer("CVARS_SETCVARS_DONE", "CVARS_SETCVARS_START")
 end
 
 function CVars.SetTTSSettings()
@@ -180,6 +185,7 @@ function CVars.SetNameplateSettings()
 end
 
 function CVars.setInterfaceScale()
+  ns.DEBUG.startDebugTimer("CVARS_SET_INTERFACE_SCALE_START")
   if ns.db.profile.general_defaultScaling == "Scale1440p" then
     UIParent:SetScale(0.53333333333333) -- 1440p
   elseif ns.db.profile.general_defaultScaling == "Scale1080p" then
@@ -187,6 +193,7 @@ function CVars.setInterfaceScale()
   else
     -- UIParent:SetScale(1.0) -- No scaling
   end
+  DEBUG.checkpointDebugTimer("CVARS_SET_INTERFACE_SCALE_DONE", "CVARS_SET_INTERFACE_SCALE_START")
 end
 
 
@@ -234,10 +241,12 @@ end
 
 
 function CVars.enableAllActionBars()
+  DEBUG.startDebugTimer("CVARS_ENABLE_ALL_ACTIONBARS_START")
   local list = {GetActionBarToggles()};
   for i = 1, 7 do
     list[i] = true
   end
   SetActionBarToggles(unpack(list));
   MultiActionBar_Update()
+  DEBUG.checkpointDebugTimer("CVARS_ENABLE_ALL_ACTIONBARS_DONE", "CVARS_ENABLE_ALL_ACTIONBARS_START")
 end

@@ -1,15 +1,19 @@
 local _, ns = ...
 local Addons = {}
 local addon = LibStub("AceAddon-3.0"):GetAddon("WilduTools")
+local DEBUG = ns.DEBUG
 
 function Addons.scaleAddOnsSize()
+  ns.DEBUG.startDebugTimer("ADDONS_SCALE_SIZE_START")
   if (DUIQuestFrame) then
     DUIQuestFrame:SetScale(0.7)
   end
+  DEBUG.checkpointDebugTimer("ADDONS_SCALE_SIZE_DONE", "ADDONS_SCALE_SIZE_START")
 end
 
 -- Remove in midnight
 function Addons.checkForWAModels()
+  ns.DEBUG.startDebugTimer("ADDONS_CHECK_WA_MODELS_START")
   local function checkForModel(a)
     if a.regionType == "model" then
       return 1
@@ -35,6 +39,7 @@ function Addons.checkForWAModels()
   if count > 0 then
     print("Models count: ", count)
   end
+  DEBUG.checkpointDebugTimer("ADDONS_CHECK_WA_MODELS_DONE", "ADDONS_CHECK_WA_MODELS_START")
 end
 
 ns.Addons = Addons 
