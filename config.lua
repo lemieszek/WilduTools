@@ -17,7 +17,6 @@ ns.DEFAULT_SETTINGS = {
         actionBars_disableMouseOnActionBars = false,
         actionBars_disableMouseOnActionBars_onlyInCombat = false,
         actionBars_disableMouseOnExtraActionBar = false,
-        actionBars_shortenKeybinds = false,
 
         automation_autoAcceptGroupInviteEnabled = false,
         automation_autoAcceptGroupRoleEnabled = false,

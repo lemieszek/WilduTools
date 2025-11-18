@@ -103,7 +103,6 @@ InitFrame:SetScript("OnEvent", function()
 		Addons.checkForWAModels()
         -- DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_ADDONS_DONE", "INIT_FRAME_DELAYED_START")
 		
-		if isEnabled("actionBars_shortenKeybinds") then ActionBars.changeShortenKeybindText() end
 		if isEnabled("blizzUI_addCastTimeTextOutline") then UI.addCastTimeTextOutline() end
 		if isEnabled("blizzUI_altPowerBarText") then UI.enhanceAltPowerBarStatusText() end
 		if isEnabled("blizzUI_changeFriendlyNamesFont") then UI.changeFriendlyNamesFonts() end
@@ -237,14 +236,10 @@ local UpdateFrameLastUpdate = nil
 DEBUG.startDebugTimer("UPDATE_FRAME_INIT")
 local UpdateFrame = CreateFrame("Frame")
 UpdateFrame:SetScript("OnUpdate", function()
-    DEBUG.startDebugTimer("UPDATE_FRAME_ONUPDATE_START", "UPDATE_FRAME_INIT") -- Re-start for each update call
-	-- TODO work in progress
-	-- if GetNumExpansions() == 12 then		
-	-- 	UI.betterTexturesForBlizzPersonalResourceDisplayFrame()
-	-- end
+    DEBUG.startDebugTimer("UPDATE_FRAME_ONUPDATE_START", "UPDATE_FRAME_INIT")
+	
     -- DEBUG.checkpointDebugTimer("UPDATE_FRAME_ONUPDATE_EXPANSION_CHECK_DONE", "UPDATE_FRAME_ONUPDATE_START")
 
-	-- if out of combat, not in challenge mode, not in instance, can fly, is not swimming then
 	if IsSwimming() then
 		lastTimeSwim = GetTime()
 	end
@@ -317,9 +312,6 @@ UpdateFrame:SetScript("OnUpdate", function()
 	if not UnitAffectingCombat("player") then
 		if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
 			UI.hidePartyRaidFramesTitles()
-		end
-		if isEnabled("actionBars_shortenKeybinds") then
-			ActionBars.changeShortenKeybindText()
 		end
 		if isEnabled("cooldownManager_centerBuffIconsAnchor") then
 			CooldownManager.centerBuffIconCooldownViewerAnchor()
@@ -484,15 +476,6 @@ function addon:OnInitialize()
 						name = "Action Bars",
 						order = 2,
 						args = {
-							shortenKeybinds = {
-								type = "toggle",
-								width = "full",
-								name = "Shorten Keybind Text",
-								desc = "Shorten displayed keybind text on action buttons",
-								descStyle = "inline",
-								get = function(info) 		return self.db.profile.actionBars_shortenKeybinds end,
-								set = function(info, v) 		self.db.profile.actionBars_shortenKeybinds = v end,
-							},
 							disableMouseOnActionBars = {
 								type = "toggle",
 								width = "full",

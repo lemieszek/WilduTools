@@ -42,12 +42,7 @@ function UI.hideBlizzardBagAndReagentFrames()
   DEBUG.checkpointDebugTimer("UI_HIDE_BAG_REAGENT_FRAMES_DONE", "UI_HIDE_BAG_REAGENT_FRAMES_START")
 end
 
--- @deprecated @unused
-function UI.lowerBlizzardGryphons() 
-  if MainMenuBar and MainMenuBar.EndCaps then
-    MainMenuBar.EndCaps:SetFrameStrata("BACKGROUND")
-  end
-end
+
 
 function UI.changeFriendlyNamesFonts()
   ns.DEBUG.startDebugTimer("UI_CHANGE_FRIENDLY_NAMES_FONTS_START")
@@ -72,11 +67,7 @@ function UI.hideScreenshotText()
   ns.DEBUG.checkpointDebugTimer("UI_HIDE_SCREENSHOT_TEXT_DONE", "UI_HIDE_SCREENSHOT_TEXT_START")
 end
 
-function UI.setBuffExpandState(value)
-  if BuffFrame and BuffFrame.SetBuffsExpandedState then
-    BuffFrame:SetBuffsExpandedState(value)
-  end
-end 
+
 
 
 
@@ -244,14 +235,6 @@ function UI.addCastTimeTextOutline()
 end
 
 
-function UI.refreshBattlefieldMapFrame()
-  if BattlefieldMapFrame and BattlefieldMapFrame:IsShown()  then
-    BattlefieldMapFrame:Hide()
-    C_Timer.After(0.02, function()
-      BattlefieldMapFrame:Show()
-    end)
-  end
-end
 
 function UI.enhanceUIErrorFrame()
   if UIErrorsFrame then 
@@ -281,34 +264,6 @@ function UI.expandblizzUI_expandFriendListHeightHeight(v)
   end
 end
 
-
-function UI.hideExtraActionBarArtwork()
-	if ZoneAbilityFrame then
-		if ZoneAbilityFrame.Style then
-
-			ZoneAbilityFrame.Style:SetAlpha(0)
-			ZoneAbilityFrame.Style:Hide()
-		end
-	end
-
-	if ExtraActionButton1 then
-		ExtraActionButton1.style:SetAlpha(0)
-		ExtraActionButton1.style:Hide()
-	end
-	if ExtraActionButton2 then
-		ExtraActionButton2.style:SetAlpha(0)
-		ExtraActionButton2.style:Hide()
-	end
-	if ExtraActionBarFrame then
-		ExtraActionBarFrame:SetWidth(52)
-		ExtraActionBarFrame:SetHeight(52)
-	end
-	if ExtraAbilityContainer then
-		ExtraAbilityContainer:SetWidth(52)
-		ExtraAbilityContainer:SetHeight(52)
-	end
-end
-
 function UI.hidePartyRaidFramesTitles()
 	DEBUG.startDebugTimer("UI_HIDE_PARTY_RAID_TITLES_START")
 	if CompactPartyFrameTitle then
@@ -323,97 +278,4 @@ function UI.hidePartyRaidFramesTitles()
 		end
 	end
 	DEBUG.checkpointDebugTimer("UI_HIDE_PARTY_RAID_TITLES_DONE", "UI_HIDE_PARTY_RAID_TITLES_START")
-end
--- Experimental feature - move frames around to remove gaps when groups are horizontal
-  --[[
-  for i = 1, 8 do
-    local skip = 0
-
-    local groupFrame = _G["CompactRaidGroup" .. i]
-    
-    if groupFrame and groupFrame:IsShown() then
-      local RAID_FRAME_HEIGHT = 72
-        local point, relativeTo, relativePoint, xOfs, yOfs = groupFrame:GetPoint()
-        local x = 0
-        local y = RAID_FRAME_HEIGHT * (i - 1 - skip)
-        if (xOfs ~= x or yOfs ~= y or point ~= "BOTTOMRIGHT") then
-          groupFrame:ClearAllPoints()
-          groupFrame:SetPoint("BOTTOMRIGHT",CompactRaidFrameContainer, "BOTTOMRIGHT", 0, y)
-        end
-    else
-      skip = skip + 1
-    end
-  end    
-  ]]--
-
-
--- Detect Atlas: /run local t=PlayerFrame_GetManaBar():GetStatusBarTexture(); print("tex:", t:GetTexture(), "atlas:", t:GetAtlas()); local a,b,c,d,e,f,g,h=t:GetTexCoord(); print("tc:",a,b,c,d,e,f,g,h)
--- Healthbar: /run local t=PlayerFrame_GetHealthBar():GetStatusBarTexture(); print("tex:", t:GetTexture(), "atlas:", t:GetAtlas()); local a,b,c,d,e,f,g,h=t:GetTexCoord(); print("tc:",a,b,c,d,e,f,g,h)
--- from demon hunter DemonHunterSoulFragmentsBar /run local t=DemonHunterSoulFragmentsBar:GetStatusBarTexture(); print("tex:", t:GetTexture(), "atlas:", t:GetAtlas()); local a,b,c,d,e,f,g,h=t:GetTexCoord(); print("tc:",a,b,c,d,e,f,g,h)
-
-
-local atlasByPower = {
-    LUNAR_POWER = "Unit_Druid_AstralPower_Fill",
-    MAELSTROM = "Unit_Shaman_Maelstrom_Fill",
-    INSANITY = "Unit_Priest_Insanity_Fill",
-    FURY = "Unit_DemonHunter_Fury_Fill",
-    RUNIC_POWER = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-RunicPower",
-    ENERGY = "UI-HUD-UnitFrame-Player-PortraitOn-ClassResource-Bar-Energy",
-    FOCUS = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Focus",
-    RAGE = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Rage",
-    MANA = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Mana",
-    HEALTH = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health",
-    VOID_META = "UF-DDH-VoidMeta-Bar"
-  }
-
-local function configureSpecialTexture(bar, pType)
-  if not bar then return end
-  local atlas = atlasByPower[pType]
-  if not atlas then return end
-  local tex = bar:GetStatusBarTexture()
-  if tex and tex.SetAtlas then
-    
-    -- if force then 
-      -- tex:SetAtlas(nil, true)
-    -- end
-    local currentAtlas = tex.GetAtlas and tex:GetAtlas()
-    -- if currentAtlas ~= atlas then tex:SetAtlas(atlas, true) end
-    if tex.SetHorizTile then tex:SetHorizTile(false) end
-    if tex.SetVertTile then tex:SetVertTile(false) end
-    
-    bar:SetStatusBarColor(1, 1, 1, 1)
-    bar._baseColor = bar._baseColor or {}
-    bar._baseColor[1], bar._baseColor[2], bar._baseColor[3], bar._baseColor[4] = 1, 1, 1, 1
-    bar._lastColor = bar._lastColor or {}
-    bar._lastColor[1], bar._lastColor[2], bar._lastColor[3], bar._lastColor[4] = 1, 1, 1, 1
-    bar._usingMaxColor = false
-    
-  end
-end
-
-UI.betterTexturesForBlizzPersonalResourceDisplayFrame = function()
-    if PersonalResourceDisplayFrame.HealthBarsContainer.healthBar then
-      PersonalResourceDisplayFrame.HealthBarsContainer:SetHeight(1)
-      PersonalResourceDisplayFrame.HealthBarsContainer:SetAlpha(0)
-      -- configureSpecialTexture(PersonalResourceDisplayFrame.HealthBarsContainer.healthBar, "HEALTH")
-    end
-    
-    PersonalResourceDisplayFrame:SetScale(1.5)
-    
-    local pNum, pType = UnitPowerType("player")
-    if PersonalResourceDisplayFrame.PowerBar then 
-      PersonalResourceDisplayFrame.PowerBar:SetWidth(150)
-      PersonalResourceDisplayFrame.PowerBar.Border:SetAlpha(0)
-      PersonalResourceDisplayFrame.PowerBar.Border:Hide()
-      configureSpecialTexture(PersonalResourceDisplayFrame.PowerBar, pType)
-    end
-
-    
-      configureSpecialTexture(PersonalResourceDisplayFrame.AlternatePowerBar, "ENERGY")
-    if pType == "FURY" and PersonalResourceDisplayFrame.AlternatePowerBar then 
-      PersonalResourceDisplayFrame.AlternatePowerBar:SetWidth(150)
-      PersonalResourceDisplayFrame.AlternatePowerBar.Border:SetAlpha(0)
-      PersonalResourceDisplayFrame.AlternatePowerBar.Border:Hide()  
-      configureSpecialTexture(PersonalResourceDisplayFrame.AlternatePowerBar, "VOID_META")
-    end
 end
