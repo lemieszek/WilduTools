@@ -51,6 +51,8 @@ ns.DEFAULT_SETTINGS = {
 
         wilduUI_mountableArea = false,
         wilduUI_targetRangeFrame = false,
+        wilduUI_spellOnCD = false,
+        wilduUI_crosshair = false,
 
         -- Edit mode movable frames defaults
         editMode = {
@@ -65,6 +67,25 @@ ns.DEFAULT_SETTINGS = {
                 x = 0,
                 y = 50,
                 scale = 1,
+            },
+            spellOnCD = {
+                point = 'CENTER',
+                x = 0,
+                y = 0,
+                scale = 1,
+                alpha = 1,
+                zoom = 0, -- percentage 0..0.5 represented as 0..0.5
+            },
+            crosshair = {
+                point = "CENTER",
+                x = 0,
+                y = 0,
+                scale = 1,
+                alpha = 1,
+                thickness = 6,
+                inner_length = 32,
+                border_size = 4,
+                class_colored = true,
             },
         },
     }

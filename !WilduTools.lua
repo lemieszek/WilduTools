@@ -56,6 +56,8 @@ PlayerLoginFrame:SetScript("OnEvent", function()
         DEBUG.startDebugTimer("PLAYER_LOGIN_DELAYED_START")
 		WilduUI.InitilizeRangeFrame()
 		WilduUI.InitilizeMountableAreaIndicator()
+		WilduUI.InitilizeCrosshair()
+		WilduUI.InitilizeSpellOnCD()
 		if isEnabled("general_alwaysEnableAllActionBars") then
 			CVars.enableAllActionBars()
 		end
@@ -934,7 +936,25 @@ function addon:OnInitialize()
 									self.db.profile.wilduUI_mountableArea = v
 									if v then WilduUI.InitilizeMountableAreaIndicator() end
 								end,
-							}
+							},
+							spellOnCD = {
+								type = "toggle",
+								width = "full",
+								name = "WORK IN PROGRESS: Spell-on-CD Alert",
+								desc = "Show an alert icon when a player's spell fails to cast",
+								descStyle = "inline",
+								get = function(info) return self.db.profile.wilduUI_spellOnCD end,
+								set = function(info, v) self.db.profile.wilduUI_spellOnCD = v; if v then WilduUI.InitilizeSpellOnCD() end end,
+							},
+							crosshair = {
+								type = "toggle",
+								width = "full",
+								name = "WORK IN PROGRESS: Crosshair",
+								desc = "Show a simple class-colored crosshair in the center of the screen",
+								descStyle = "inline",
+								get = function(info) return self.db.profile.wilduUI_crosshair end,
+								set = function(info, v) self.db.profile.wilduUI_crosshair = v; if v then WilduUI.InitilizeCrosshair() end end,
+							},
 						},
 					},
 					-- Party & Raid group
