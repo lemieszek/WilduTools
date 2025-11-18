@@ -228,7 +228,7 @@ end
 
 local spellOnCDFrame = CreateFrame("Frame", "WilduTools_SpellOnCD", UIParent)
 spellOnCDFrame:SetSize(30, 30)
-spellOnCDFrame:SetPoint("CENTER", _parentForSpellCd, "CENTER", 0, 0)
+spellOnCDFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 spellOnCDFrame:SetScale(1)
 
 spellOnCDFrame.icon = spellOnCDFrame:CreateTexture(nil, "OVERLAY")
@@ -351,10 +351,15 @@ function WilduUI.InitilizeSpellOnCD()
 end
 
 
-
+local crosshairParent = CreateFrame("Frame", "WilduTools Crosshair", UIParent)
+crosshairParent:EnableMouse(false)
+crosshairParent._wt_initialized = false
 function WilduUI.InitilizeCrosshair()
 	-- create crosshair on demand to avoid global UI objects when disabled
-	if WilduTools_Crosshair and WilduTools_Crosshair.parent and WilduTools_Crosshair.parent._wt_initialized then return end
+	
+	crosshairParent:SetAlpha(1)
+	if crosshairParent._wt_initialized then return end
+	crosshairParent._wt_initialized = true
 
 	-- ensure editMode defaults exist
 	if not ns.Addon.db.profile.editMode then ns.Addon.db.profile.editMode = {} end
@@ -367,11 +372,9 @@ function WilduUI.InitilizeCrosshair()
 	local border_size = e.border_size or 4
 	local class_colored = (e.class_colored == nil) and true or e.class_colored
 
-	-- create parent frame
-	local parent = CreateFrame("Frame", "WilduTools_CrosshairParent", UIParent)
-	parent:SetSize(inner_length + thickness + border_size, inner_length + thickness + border_size)
-	parent:SetPoint("CENTER", UIParent, e.point or 'CENTER', e.x or 0, e.y or 0)
-	parent:EnableMouse(false)
+	crosshairParent:SetSize(inner_length + thickness + border_size, inner_length + thickness + border_size)
+	crosshairParent:SetPoint("CENTER", UIParent, e.point or 'CENTER', e.x or 0, e.y or 0)
+	crosshairParent:EnableMouse(false)
 
 	local function getClassColor()
 		local _, class = UnitClass("player")
@@ -383,9 +386,9 @@ function WilduUI.InitilizeCrosshair()
 	end
 
 	local function makeBar(name, width, height, point, relPoint, x, y, level)
-		local f = CreateFrame("Frame", name, parent)
+		local f = CreateFrame("Frame", name, crosshairParent)
 		f:SetSize(width, height)
-		f:SetPoint(point, parent, relPoint, x, y)
+		f:SetPoint(point, crosshairParent, relPoint, x, y)
 		f:EnableMouse(false)
 		local t = f:CreateTexture(nil, "BACKGROUND")
 		t:SetDrawLayer("BACKGROUND",level)
@@ -413,45 +416,43 @@ function WilduUI.InitilizeCrosshair()
 	outerHorizontal.tex:SetColorTexture(0, 0, 0, alpha)
 	outerVertical.tex:SetColorTexture(0, 0, 0, alpha)
 
-	WilduTools_Crosshair = {
-		UpdateColor = function()
-			local rr, gg, bb = getClassColor()
-			local a = alpha
-			local class_colored_now = ns.Addon.db.profile.editMode.crosshair.class_colored
-			if class_colored_now == nil or class_colored_now then
-				innerVertical.tex:SetColorTexture(rr, gg, bb, a)
-				innerHorizontal.tex:SetColorTexture(rr, gg, bb, a)
-			else
-				innerVertical.tex:SetColorTexture(1, 1, 1, a)
-				innerHorizontal.tex:SetColorTexture(1, 1, 1, a)
-			end
-			-- outer border alpha
-			outerHorizontal.tex:SetColorTexture(0, 0, 0, a)
-			outerVertical.tex:SetColorTexture(0, 0, 0, a)
-		end,
-	}
+	local function UpdateColor()
+		local rr, gg, bb = getClassColor()
+		local a = alpha
+		local class_colored_now = ns.Addon.db.profile.editMode.crosshair.class_colored
+		if class_colored_now == nil or class_colored_now then
+			innerVertical.tex:SetColorTexture(rr, gg, bb, a)
+			innerHorizontal.tex:SetColorTexture(rr, gg, bb, a)
+		else
+			innerVertical.tex:SetColorTexture(1, 1, 1, a)
+			innerHorizontal.tex:SetColorTexture(1, 1, 1, a)
+		end
+		-- outer border alpha
+		outerHorizontal.tex:SetColorTexture(0, 0, 0, a)
+		outerVertical.tex:SetColorTexture(0, 0, 0, a)
+	end
 
 	-- update color on login (in case class color table not available earlier)
 	local ev = CreateFrame("Frame")
 	ev:RegisterEvent("PLAYER_LOGIN")
 	ev:SetScript("OnEvent", function()
-		WilduTools_Crosshair.UpdateColor()
+		UpdateColor()
 		ev:UnregisterAllEvents()
 	end)
 
 	-- Register with LEM for position persistence
-	LEM:AddFrame(parent, function(frame, layoutName, point, x, y)
+	LEM:AddFrame(crosshairParent, function(frame, layoutName, point, x, y)
 		ns.Addon.db.profile.editMode.crosshair.point = point
 		ns.Addon.db.profile.editMode.crosshair.x = x
 		ns.Addon.db.profile.editMode.crosshair.y = y
 	end, ns.Addon.db.profile.editMode.crosshair)
 
 	-- LEM settings: scale, alpha, thickness, inner_length, border_size, class_colored
-	LEM:AddFrameSettings(parent, {
+	LEM:AddFrameSettings(crosshairParent, {
 		{
 			name = 'Scale', kind = LEM.SettingType.Slider, default = 1,
 			get = function() return ns.Addon.db.profile.editMode.crosshair.scale end,
-			set = function(_, v) ns.Addon.db.profile.editMode.crosshair.scale = v; parent:SetScale(v) end,
+			set = function(_, v) ns.Addon.db.profile.editMode.crosshair.scale = v; crosshairParent:SetScale(v) end,
 			minValue = 0.1, maxValue = 5, valueStep = 0.1, formatter = function(v) return FormatPercentage(v, true) end,
 		},
 		{
@@ -518,10 +519,37 @@ function WilduUI.InitilizeCrosshair()
 			get = function() return ns.Addon.db.profile.editMode.crosshair.class_colored end,
 			set = function(_, v)
 				ns.Addon.db.profile.editMode.crosshair.class_colored = v
-				WilduTools_Crosshair.UpdateColor()
+				UpdateColor()
 			end,
 		}
 	})
 
-	parent._wt_initialized = true
+	-- EditMode callbacks: mirror rangeFrame behaviour — move off-screen when disabled
+	LEM:RegisterCallback('enter', function()
+		if ns.Addon.db.profile.wilduUI_crosshair then
+			crosshairParent:ClearAllPoints()
+			crosshairParent:SetPoint("CENTER", UIParent, ns.Addon.db.profile.editMode.crosshair.point, ns.Addon.db.profile.editMode.crosshair.x, ns.Addon.db.profile.editMode.crosshair.y)
+		else
+			crosshairParent:SetPoint("TOP", UIParent, "TOP", 0, -500)
+		end
+	end)
+
+	LEM:RegisterCallback('layout', function(layoutName)
+		local defaultPosition = { point = 'CENTER', x = 0, y = 0 }
+		if not ns.Addon.db.profile.editMode.crosshair then
+			ns.Addon.db.profile.editMode.crosshair = CopyTable(defaultPosition)
+		end
+
+		crosshairParent:ClearAllPoints()
+		if ns.Addon.db.profile.wilduUI_crosshair then
+			crosshairParent:SetPoint("CENTER", UIParent, ns.Addon.db.profile.editMode.crosshair.point, ns.Addon.db.profile.editMode.crosshair.x, ns.Addon.db.profile.editMode.crosshair.y)
+		else
+			crosshairParent:SetPoint("TOP", UIParent, "TOP", 0, -500)
+		end
+	end)
+
+end
+
+function WilduUI.UnInitilizeCrosshair()
+	crosshairParent:SetAlpha(0)
 end

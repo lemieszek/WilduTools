@@ -56,7 +56,7 @@ PlayerLoginFrame:SetScript("OnEvent", function()
         DEBUG.startDebugTimer("PLAYER_LOGIN_DELAYED_START")
 		WilduUI.InitilizeRangeFrame()
 		WilduUI.InitilizeMountableAreaIndicator()
-		WilduUI.InitilizeCrosshair()
+		if isEnabled("wilduUI_crosshair") then WilduUI.InitilizeCrosshair() end
 		WilduUI.InitilizeSpellOnCD()
 		if isEnabled("general_alwaysEnableAllActionBars") then
 			CVars.enableAllActionBars()
@@ -953,7 +953,7 @@ function addon:OnInitialize()
 								desc = "Show a simple class-colored crosshair in the center of the screen",
 								descStyle = "inline",
 								get = function(info) return self.db.profile.wilduUI_crosshair end,
-								set = function(info, v) self.db.profile.wilduUI_crosshair = v; if v then WilduUI.InitilizeCrosshair() end end,
+								set = function(info, v) self.db.profile.wilduUI_crosshair = v; if v then WilduUI.InitilizeCrosshair() else WilduUI.UnInitilizeCrosshair() end end,
 							},
 						},
 					},
