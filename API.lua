@@ -5,7 +5,7 @@ local _, ns = ...
 local API = {}
 ns.API = API
 
-local LibRangeCheck = LibStub("LibRangeCheck-3.0")
+local LibRangeCheck = LibStub("LibRangeCheck-3.0-WildFork")
 
 local DEBUG = ns.DEBUG
 

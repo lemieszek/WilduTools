@@ -12,7 +12,7 @@ License: MIT
 -- The lib handles the refreshing of checker lists in case talents / spells change and in some special cases when equipment changes (for example some of the mage pvp gloves change the range of the Fire Blast spell), and also handles the caching of items used for item-based range checks.\\
 -- A callback is provided for those interested in checker changes.
 -- @usage
--- local rc = LibStub("LibRangeCheck-3.0")
+-- local rc = LibStub("LibRangeCheck-3.0-WildFork")
 --
 -- rc.RegisterCallback(self, rc.CHECKERS_CHANGED, function() print("need to refresh my stored checkers") end)
 --
@@ -39,7 +39,7 @@ License: MIT
 --
 -- @class file
 -- @name LibRangeCheck-3.0
-local MAJOR_VERSION = "LibRangeCheck-3.0"
+local MAJOR_VERSION = "LibRangeCheck-3.0-WildFork"
 local MINOR_VERSION = 28
 
 ---@class lib
@@ -4404,7 +4404,7 @@ end
 -- @return **minRange**, **maxRange** pair if a range estimate could be determined, **nil** otherwise. **maxRange** is **nil** if **unit** is further away than the highest possible range we can check.
 -- Includes checks for unit validity and friendly/enemy status.
 -- @usage
--- local rc = LibStub("LibRangeCheck-3.0")
+-- local rc = LibStub("LibRangeCheck-3.0-WildFork")
 -- local minRange, maxRange = rc:GetRange('target')
 -- local minRangeIfVisible, maxRangeIfVisible = rc:GetRange('target', true)
 function lib:GetRange(unit, checkVisible, noItems, maxCacheAge)
