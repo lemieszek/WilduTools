@@ -77,15 +77,19 @@ ns.DEFAULT_SETTINGS = {
                 zoom = 0, -- percentage 0..0.5 represented as 0..0.5
             },
             crosshair = {
-                point = "CENTER",
+                point = 'CENTER',
                 x = 0,
                 y = 0,
                 scale = 1,
                 alpha = 1,
-                thickness = 6,
-                inner_length = 32,
+                thickness = 4,
+                inner_length = 24,
                 border_size = 4,
                 class_colored = true,
+                customR = 1,
+                customG = 1,
+                customB = 1,
+                visibility = "Always"
             },
         },
     }
