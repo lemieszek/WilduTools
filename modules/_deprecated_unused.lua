@@ -391,3 +391,35 @@ function ActionBars.changeShortenKeybindText()
   DEBUG.checkpointDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_POST_HIDE_HOTKEY", "ACTIONBARS_CHANGE_SHORTEN_KEYBIND_POST_HOOK")
   DEBUG.checkpointDebugTimer("ACTIONBARS_CHANGE_SHORTEN_KEYBIND_DONE", "ACTIONBARS_CHANGE_SHORTEN_KEYBIND_START")
 end
+
+function UI.ResizeSuperTracker()
+  if (SuperTrackedFrame) then
+    -- SuperTrackedFrame:SetScale(1.5)
+    SuperTrackedFrame.Arrow:SetScale(1.5)
+    SuperTrackedFrame.Arrow:SetAtlas("glues-characterSelect-icon-arrowUp" , true)
+    -- SuperTrackedFrame.Icon:SetScale(1)
+    SuperTrackedFrame.DistanceText:SetFont(SuperTrackedFrame.DistanceText:GetFont(), 13, "OUTLINE")
+    SuperTrackedFrame:SetFrameStrata("HIGH")
+  end
+end
+
+
+-- @deprecated - broken in Midnight while in instance
+function UI.hideTooltipUnitFrameInstruction()
+  if UI._wt_enhancedTooltips then return end
+  UI._wt_enhancedTooltips = true
+  ns.DEBUG.startDebugTimer("UI_HIDE_TOOLTIP_UNITFRAME_START")
+  -- Hide the default GameTooltipStatusBar (health bar)
+  GameTooltipStatusBarTexture:SetTexture("")
+  -- Remove the right-click for frame settings instruction (UNIT_POPUP_RIGHT_CLICK)
+  hooksecurefunc("UnitFrame_UpdateTooltip", function(self)
+    GameTooltip_SetDefaultAnchor(GameTooltip, self)
+    GameTooltip:SetUnit(self.unit, true)
+    GameTooltip:Show()
+  end)
+
+  -- hooksecurefunc("GameTooltip_SetDefaultAnchor", function(self,parent) 
+  --     self:SetOwner(parent,"ANCHOR_NONE")
+  -- end)    
+  DEBUG.checkpointDebugTimer("UI_HIDE_TOOLTIP_UNITFRAME_DONE", "UI_HIDE_TOOLTIP_UNITFRAME_START")
+end

@@ -34,13 +34,6 @@ local function isEnabled(key)
 	return v ~= false and v ~= nil
 end
 
-local function getSettingValue(key)
-	if not addon or not addon.db or not addon.db.profile then
-		return nil
-	end
-	return addon.db.profile[key]
-end
-
 DEBUG.startDebugTimer("PLAYER_LOGIN_FRAME_INIT")
 local PlayerLoginFrame = CreateFrame("Frame", nil, UIParent)
 PlayerLoginFrame:RegisterEvent("PLAYER_LOGIN")
@@ -49,7 +42,6 @@ PlayerLoginFrame:SetScript("OnEvent", function()
 	Automation:InitializeGossips()
 	Automation:InitAutoAcceptRole()
 	Automation:InitAutoAcceptGroupInvite()
-	Automation:SetDefaultEditModeManagerLayout()
     DEBUG.checkpointDebugTimer("PLAYER_LOGIN_EVENT_AUTOMATION_DONE", "PLAYER_LOGIN_EVENT_START")
 
 	C_Timer.After(1, function()
@@ -115,9 +107,8 @@ InitFrame:SetScript("OnEvent", function()
 		if isEnabled("blizzUI_expandFriendListHeight") then UI.expandFriendListHeight() end
 		if isEnabled("blizzUI_hideBagsFrames") then UI.hideBlizzardBagAndReagentFrames() end
 		if isEnabled("blizzUI_hideScreenshotText") then UI.hideScreenshotText() end
-		if isEnabled("blizzUI_hideTooltipUnitFrameInstruction") then UI.hideTooltipUnitFrameInstruction() end
 		
-		if isEnabled("blizzUI_resizeBlizzardObjectiveTracker") then UI.resizeBlizzardObjectiveTracker(getSettingValue(blizzUI_resizeBlizzardObjectiveTrackerRange)) end
+		if isEnabled("blizzUI_resizeBlizzardObjectiveTracker") then UI.resizeBlizzardObjectiveTracker(addon.db.profile["blizzUI_resizeBlizzardObjectiveTrackerRange"]) end
 		DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_UI_TWEAKS_DONE", "INIT_FRAME_DELAYED_START")
 		
 		if isEnabled("actionBars_disableMouseOnActionBars") and (InCombatLockdown() or not isEnabled("actionBars_disableMouseOnActionBars_onlyInCombat")) then
@@ -145,7 +136,6 @@ InitFrame:SetScript("OnEvent", function()
 			if isEnabled("actionBars_disableMouseOnExtraActionBar")  then
 				ActionBars.disableMouseOnExtraActionBarArt()
 			end
-			if isEnabled("partyRaid_hidePartyRaidFramesTitles") then UI.hidePartyRaidFramesTitles() end
 			if isEnabled("cooldownManager_centerBuffIconsAnchor") then
 				CooldownManager.centerBuffIconCooldownViewerAnchor()
 			end
@@ -153,7 +143,7 @@ InitFrame:SetScript("OnEvent", function()
 				CooldownManager.centerEssentialCooldownViewerAnchor()
 			end
 		end
-        DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_ACTIONBARS_DONE", "INIT_FRAME_DELAYED_START")
+        DEBUG.checkpointDebugTimer("INIT_FRAME_DELAYED_ACTIONBARS_DONE", "INIT_FRAME_DELAYED_UI_TWEAKS_DONE")
 	end)
     DEBUG.checkpointDebugTimer("INIT_FRAME_EVENT_END", "INIT_FRAME_EVENT_START")
 end)
@@ -197,7 +187,6 @@ CombatFrame:SetScript("OnEvent", function(_self, event)
 				ns.ActionBars.enableMouseOnBar("MultiBar7Button")
 			end
 			if isEnabled("actionBars_disableMouseOnExtraActionBar") then ActionBars.disableMouseOnExtraActionBarArt() end
-			if isEnabled("partyRaid_hidePartyRaidFramesTitles") then UI.hidePartyRaidFramesTitles() end
 		end
 	end
     DEBUG.checkpointDebugTimer("COMBAT_FRAME_EVENT_END", "COMBAT_FRAME_EVENT_START")
@@ -207,9 +196,6 @@ DEBUG.checkpointDebugTimer("COMBAT_FRAME_INIT_DONE", "COMBAT_FRAME_INIT")
 DEBUG.startDebugTimer("EDIT_MODE_CALLBACKS_INIT")
 EventRegistry:RegisterCallback("EditMode.Enter", function()
     DEBUG.startDebugTimer("EDIT_MODE_ENTER_START")
-	if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
-		UI.hidePartyRaidFramesTitles()
-	end
 	if isEnabled("cooldownManager_centerBuffIconsAnchor") then
 		CooldownManager.centerBuffIconCooldownViewerAnchor()
 	end
@@ -220,9 +206,6 @@ EventRegistry:RegisterCallback("EditMode.Enter", function()
 end)
 EventRegistry:RegisterCallback("EditMode.Exit", function()
     DEBUG.startDebugTimer("EDIT_MODE_EXIT_START")
-	if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
-		UI.hidePartyRaidFramesTitles()
-	end
 	if isEnabled("cooldownManager_centerBuffIconsAnchor") then
 		CooldownManager.centerBuffIconCooldownViewerAnchor()
 	end
@@ -314,9 +297,6 @@ UpdateFrame:SetScript("OnUpdate", function()
 	UpdateFrameLastUpdate = GetTime()
 	
 	if not UnitAffectingCombat("player") then
-		if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
-			UI.hidePartyRaidFramesTitles()
-		end
 		if isEnabled("cooldownManager_centerBuffIconsAnchor") then
 			CooldownManager.centerBuffIconCooldownViewerAnchor()
 		end
@@ -328,24 +308,6 @@ UpdateFrame:SetScript("OnUpdate", function()
 end)
 DEBUG.checkpointDebugTimer("UPDATE_FRAME_INIT_DONE", "UPDATE_FRAME_INIT")
 
-
-local RaidChangedFrameLastUpdate = nil
-DEBUG.startDebugTimer("RAID_CHANGED_FRAME_INIT")
-local RaidChangedFrame = CreateFrame("Frame")
-RaidChangedFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-RaidChangedFrame:SetScript("OnEvent", function()
-    DEBUG.startDebugTimer("RAID_CHANGED_FRAME_EVENT_START")
-	if RaidChangedFrameLastUpdate ~= nil and RaidChangedFrameLastUpdate > GetTime() - 1.0 then
-		return
-	end
-	if not UnitAffectingCombat("player") then
-		if isEnabled("partyRaid_hidePartyRaidFramesTitles") then
-			UI.hidePartyRaidFramesTitles()
-		end
-	end
-    DEBUG.checkpointDebugTimer("RAID_CHANGED_FRAME_EVENT_END", "RAID_CHANGED_FRAME_EVENT_START")
-end)
-DEBUG.checkpointDebugTimer("RAID_CHANGED_FRAME_INIT_DONE", "RAID_CHANGED_FRAME_INIT")
 
 
 -- Addon initialization
@@ -790,16 +752,6 @@ function addon:OnInitialize()
 								get = function(info) return self.db.profile.blizzUI_hideScreenshotText end,
 								set = function(info, v) self.db.profile.blizzUI_hideScreenshotText = v end,
 							},
-							blizzUI_hideTooltipUnitFrameInstruction = {
-								order = 3,
-								type = "toggle",
-								width = "full",
-								name = "Hide Tooltip Unit Frame Instruction |cffff0000(*)|r",
-								desc = "Hide 'Right click for Frame Settings' line from unit frame tooltips",
-								descStyle = "inline",
-								get = function(info) return self.db.profile.blizzUI_hideTooltipUnitFrameInstruction end,
-								set = function(info, v) self.db.profile.blizzUI_hideTooltipUnitFrameInstruction = v end,
-							},
 							improvementsHeader = {
 								order = 20,
 								type = "header",
@@ -932,7 +884,7 @@ function addon:OnInitialize()
 								set = function(info, v) 
 									self.db.profile.blizzUI_expandFriendListHeightRange = v 
 									if self.db.profile.blizzUI_expandFriendListHeight then
-										UI.expandblizzUI_expandFriendListHeightHeight(v)
+										UI.expandFriendListHeight(v)
 									end
 								end,
 							},
@@ -1018,23 +970,6 @@ function addon:OnInitialize()
 								set = function(info, v) self.db.profile.wilduUI_targetCombat = v; if v then WilduUI.InitializeTargetCombatIndicator() end end,
 							},
 
-						},
-					},
-					-- Party & Raid group
-					party_raid_group = {
-						type = "group",
-						name = "Party & Raid Frames",
-						order = 50,
-						args = {
-							partyRaid_hidePartyRaidFramesTitles = {
-								type = "toggle",
-								width = "full",
-								name = "Hide Party & Raid Group Titles",
-								desc = "Hides titles on party and raid frames for clarity and compactness",
-								descStyle = "inline",
-								get = function(info) return self.db.profile.partyRaid_hidePartyRaidFramesTitles end,
-								set = function(info, v) self.db.profile.partyRaid_hidePartyRaidFramesTitles = v end,
-							},
 						},
 					},
 					utm = {
@@ -1150,19 +1085,6 @@ function addon:OnInitialize()
 								order = 4,
 								guiInline = true,
 								args = {
-									enableAutoLoot = {
-										type = "toggle",
-										name = "Auto Loot",
-										order = 1,
-										width = "full",
-										desc = "Enables auto loot when opening lootable objects",
-										get = function(info) 
-											return CVars.getCVar("autoLootDefault")
-										 end,
-										set = function(info, v) 
-											CVars.setCVar("autoLootDefault", v)
-										end,
-									},
 									advancedCombatLogging = {
 										type = "toggle",
 										name = "Advanced Combat Logging",

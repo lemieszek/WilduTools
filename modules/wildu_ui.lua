@@ -3,7 +3,6 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local LEM = LibStub('LibEditMode')
 local WilduUI = {}
 
-
 local API = ns.API
 ns.WilduUI = WilduUI
 local DEBUG = ns.DEBUG
@@ -319,7 +318,7 @@ function WilduUI.InitializeMountableAreaIndicator()
 			self.icon:SetAlpha(1)
 			return
 		end
-        local canMount = C_Spell.IsSpellUsable(150544)
+        local canMount = API:CanPlayerMount()
         self.icon:SetAlpha(canMount and 1 or 0)
     end)
     

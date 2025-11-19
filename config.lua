@@ -34,7 +34,6 @@ ns.DEFAULT_SETTINGS = {
         blizzUI_expandFriendListHeightRange = 600,
         blizzUI_hideBagsFrames = false,
         blizzUI_hideScreenshotText = false,
-        blizzUI_hideTooltipUnitFrameInstruction = false,
         blizzUI_resizeBlizzardObjectiveTracker = false,
         blizzUI_resizeBlizzardObjectiveTrackerRange = 1,
 
@@ -47,7 +46,6 @@ ns.DEFAULT_SETTINGS = {
         general_minimapButtonOnClickAction = "Settings",
         general_minimapButtonOnClickShiftAction = "Settings",
 
-        partyRaid_hidePartyRaidFramesTitles = false,
 
         wilduUI_mountableArea = false,
         wilduUI_targetRangeFrame = false,

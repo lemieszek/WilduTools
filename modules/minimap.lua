@@ -87,7 +87,7 @@ function Minimap:Init(db)
 
 		local contextData = {}
 
-		ns.API.ShowBlizzardMenu(widget or Minimap.anchorFrame, ButtonMenu, contextData)
+		ns.API.ShowBlizzardMenu(widget, ButtonMenu, contextData)
 
 	end
 
