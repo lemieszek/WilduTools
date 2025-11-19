@@ -46,14 +46,25 @@ end
 
 function CVars.setInterfaceScale()
   ns.DEBUG.startDebugTimer("CVARS_SET_INTERFACE_SCALE_START")
-  if ns.db.profile.general_defaultScaling == "Scale1440p" then
-    UIParent:SetScale(0.53333333333333) -- 1440p
-  elseif ns.db.profile.general_defaultScaling == "Scale1080p" then
-    UIParent:SetScale(0.71111111111111) -- 1080p
-  else
-    -- UIParent:SetScale(1.0) -- No scaling
+  
+  local scalePresets = {
+    Scale1440p = 0.533333333333,
+    Scale1080p = 0.711111111111,
+  }
+  
+  local targetScale = scalePresets[ns.db.profile.general_defaultScaling]
+  
+  if targetScale then
+    local function compareScale(a, b)
+      return math.floor(a * 10000) / 10000 == math.floor(b * 10000) / 10000
+    end
+    
+    if not compareScale(UIParent:GetScale(), targetScale) then
+      UIParent:SetScale(targetScale)
+    end
   end
-  DEBUG.checkpointDebugTimer("CVARS_SET_INTERFACE_SCALE_DONE", "CVARS_SET_INTERFACE_SCALE_START")
+  
+  ns.DEBUG.checkpointDebugTimer("CVARS_SET_INTERFACE_SCALE_DONE", "CVARS_SET_INTERFACE_SCALE_START")
 end
 
 

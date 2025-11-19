@@ -71,9 +71,9 @@ DEBUG.checkpointDebugTimer("PLAYER_LOGIN_FRAME_INIT_DONE", "PLAYER_LOGIN_FRAME_I
 
 DEBUG.startDebugTimer("INTERFACE_SCALE_FRAME_INIT")
 local InterfaceScaleFrame = CreateFrame("Frame", nil, UIParent)
-InterfaceScaleFrame:RegisterEvent("VARIABLES_LOADED")
+-- InterfaceScaleFrame:RegisterEvent("VARIABLES_LOADED")
 InterfaceScaleFrame:RegisterEvent("PLAYER_LOGIN")
-InterfaceScaleFrame:RegisterEvent("UI_SCALE_CHANGED")
+-- InterfaceScaleFrame:RegisterEvent("UI_SCALE_CHANGED")
 InterfaceScaleFrame:SetScript("OnEvent", function()
     DEBUG.startDebugTimer("INTERFACE_SCALE_EVENT_START")
 	CVars.setInterfaceScale()
@@ -112,7 +112,7 @@ InitFrame:SetScript("OnEvent", function()
 		if isEnabled("blizzUI_changeFriendlyNamesFont") then UI.changeFriendlyNamesFonts() end
 		if isEnabled("blizzUI_cleanupObjectiveTracker") then UI.cleanupObjectiveTracker() end
 		if isEnabled("blizzUI_enchanceUIErrorFrame") then UI.enhanceUIErrorFrame() end
-		if isEnabled("blizzUI_expandFriendListHeight") then UI.expandblizzUI_expandFriendListHeightHeight() end
+		if isEnabled("blizzUI_expandFriendListHeight") then UI.expandFriendListHeight() end
 		if isEnabled("blizzUI_hideBagsFrames") then UI.hideBlizzardBagAndReagentFrames() end
 		if isEnabled("blizzUI_hideScreenshotText") then UI.hideScreenshotText() end
 		if isEnabled("blizzUI_hideTooltipUnitFrameInstruction") then UI.hideTooltipUnitFrameInstruction() end
@@ -373,7 +373,49 @@ function addon:OnInitialize()
 	self:RegisterChatCommand("kb", function()
 		ns.API:OpenQuickKeybindMode()
 	end)
-
+    self:RegisterChatCommand("wildudebug", function(input)
+		local cmd = input and input:lower() or ""
+		
+		if cmd == "timer list" then
+		print("|cFFFFFF00Active Timers:|r")
+		for label, time in pairs(DEBUG.timers) do
+			print(string.format("  %s: %.3f s", label, GetTime() - time))
+		end
+		
+		elseif cmd == "events list" then
+		print("|cFF0099FFRegistered Events:|r")
+		for event, data in pairs(DEBUG.events) do
+			print(string.format("  %s (fired %d times)", event, data.firedCount))
+		end
+		
+		elseif cmd == "hooks list" then
+		print("|cFFFF9900Registered Hooks:|r")
+		for hookType, modules in pairs(DEBUG.hooks) do
+			print(string.format("  %s: %d hooks", hookType, #modules))
+		end
+		
+		elseif cmd == "spike trace" then
+		local analysis = DEBUG.analyzeSpikeData()
+		if analysis.peakDelta then
+			print("|cFFFF0000Spike Trace:|r")
+			print(string.format("Peak: %.2f ms at %.2f s", analysis.peakDelta, analysis.peakTime / 1000))
+			print(string.format("Total spikes detected: %d", analysis.spikeCount))
+		else
+			print("No spike data available")
+		end
+		
+		elseif cmd == "report" then
+		DEBUG.printReport()
+		
+		else
+		print("|cFFFFFF00WilduTools Debug Commands:|r")
+		print("/wildudebug timer list - Show active timers")
+		print("/wildudebug events list - Show registered events")
+		print("/wildudebug hooks list - Show registered hooks")
+		print("/wildudebug spike trace - Show spike analysis")
+		print("/wildudebug report - Print full debug report")
+		end
+	end)
 	-- Create options table
 	local options = {
 		name = "WilduTools",
