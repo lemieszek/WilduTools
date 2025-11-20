@@ -853,8 +853,8 @@ function addon:OnInitialize()
 								width = "full",
 								name = "Tracker Frame Scale",
 								min = 0.2,
-								max = 2.0,
-								step = 0.1,
+								max = 3.0,
+								step = 0.02,
 								get = function(info) return self.db.profile.blizzUI_resizeBlizzardObjectiveTrackerRange end,
 								set = function(info, v) 
 									self.db.profile.blizzUI_resizeBlizzardObjectiveTrackerRange = v 
