@@ -93,9 +93,9 @@ end
 function UTM:SetupUTMMacro()
     local macroIndex = GetMacroIndexByName(ns.CONSTANTS.SET_TARGET_MACRO_NAME)
     if macroIndex == 0 then
-        local numAccountMacros = GetNumMacros()
-        if numAccountMacros == 36 then
-            print("Action Bar was unable to create needed macros, since you have exceeded maximum number of possible macros.")
+        local numAccountMacros, numCharacterMacros = GetNumMacros()
+        if numCharacterMacros >= 16 then
+            print("Was unable to create needed macros, since you have exceeded maximum number of possible macros.")
             return
         end
         CreateMacro(ns.CONSTANTS.SET_TARGET_MACRO_NAME, "4335642", ns.MACRO_TEMPLATES.UTM_SET_TARGET, true)
@@ -108,9 +108,9 @@ end
 function UTM:SetupUTMTargetMacro()
     local macroIndex = GetMacroIndexByName(ns.CONSTANTS.TARGET_MACRO_NAME)
     if macroIndex == 0 then
-        local numAccountMacros = GetNumMacros()
-        if numAccountMacros == 36 then
-            print("Action Bar was unable to create needed macros, since you have exceeded maximum number of possible macros.")
+        local numAccountMacros, numCharacterMacros = GetNumMacros()
+        if numCharacterMacros >= 16 then
+            print("Was unable to create needed macros, since you have exceeded maximum number of possible macros.")
             return
         end
         CreateMacro(ns.CONSTANTS.TARGET_MACRO_NAME, "4335643", ns.MACRO_TEMPLATES.UTM_EXAMPLE .. "\n", true)

@@ -986,7 +986,7 @@ function addon:OnInitialize()
 							},
 							setup = {
 								type = "execute",
-								name = "Setup Macros fror this character",
+								name = "Setup Macros for this character",
 								width = "full",
 								func = function()
 									if ns.UTM then
@@ -1214,15 +1214,24 @@ end
 
 
 function addon:ShowConfig()
-	if InCombatLockdown() then
-		self:Print("In combat, can't show WilduTools settings.")
-		return
-	end
-
-	if InterfaceOptionsFrame_OpenToCategory then
-		InterfaceOptionsFrame_OpenToCategory(self.optionsFrames.general)
-		InterfaceOptionsFrame_OpenToCategory(self.optionsFrames.general)
-	else
-		Settings.OpenToCategory("WilduTools")
-	end
+	Settings.OpenToCategory("WilduTools")
 end
+
+
+
+local MountableEventFrame = CreateFrame("Frame", nil, UIParent)
+MountableEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+MountableEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+MountableEventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+MountableEventFrame:RegisterEvent("MOUNT_JOURNAL_USABILITY_CHANGED")
+MountableEventFrame:SetScript("OnEvent", function(ev1, e2)
+	print(e1, e2)
+	-- Do druid form and mount icon logic HERE
+	-- Mount logic - if mount usable - true
+	-- if flyable area - flying icon
+	-- if ground area - ground mount icon (maybe different mount ids?)
+	
+	-- mountable icon option - hide in combat
+
+	-- all icon options - strata 
+end)
