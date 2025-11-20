@@ -2,7 +2,7 @@
 ## Title: !|cff008945Wildu|r|cff8ccd00Tools|r
 ## Notes: Various automation tools
 ## Author: Wildu
-## Version: 1.2.3
+## Version: 1.2.4
 ## SavedVariables: WilduToolsDB
 ## IconTexture: Interface\Addons\!WilduTools\Media\WilduTools
 
