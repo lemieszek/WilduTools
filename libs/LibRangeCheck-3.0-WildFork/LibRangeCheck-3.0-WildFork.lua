@@ -3919,6 +3919,8 @@ end
 
 local function createCheckerList(spellList, itemList, interactList)
   local res, resInCombat = {}, {}
+  
+  -- local itemStart = GetTimePreciseSec()
   if itemList then
     for range, items in pairs(itemList) do
       for i = 1, #items do
@@ -3930,13 +3932,17 @@ local function createCheckerList(spellList, itemList, interactList)
       end
     end
   end
-
+  -- local itemTime = (GetTimePreciseSec() - itemStart) * 1000
+  -- if itemTime > 0.01 then
+      -- print(string.format("  createCheckerList ITEMS: %.4fms", itemTime))
+  -- end
   if interactList and not next(res) then
     for index, range in pairs(interactList) do
       addChecker(res, range, nil, checkers_Interact[index], "interact:" .. index)
     end
   end
 
+  -- local spellsStart = GetTimePreciseSec()
   if spellList then
     for i = 1, #spellList do
       local sid = spellList[i]
@@ -3965,6 +3971,11 @@ local function createCheckerList(spellList, itemList, interactList)
       end
     end
   end
+  
+  -- local spellsTime = (GetTimePreciseSec() - spellsStart) * 1000
+  -- if spellsTime > 0.01 then
+  --     print(string.format("  createCheckerList SPELLS: %.4fms", spellsTime))
+  -- end
 
   return res, resInCombat
 end

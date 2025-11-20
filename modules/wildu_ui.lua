@@ -115,7 +115,6 @@ local function CreateOnPositionChanged(configKey)
 		if ns.Addon.db.profile.editMode[configKey].lockHorizontal then
 			ns.Addon.db.profile.editMode[configKey].x = 0
 			ApplyFramePosition(frame, configKey, false)
-			-- print("changed")
 		else
 			ns.Addon.db.profile.editMode[configKey].x = x
 		end
@@ -130,9 +129,26 @@ end
 local function RegisterEditModeCallbacks(frame, configKey, enabledCheckFn)
     LEM:RegisterCallback('enter', function()
         local shouldHide = not enabledCheckFn()
+         if frame._wt_VisibilityDriver then 
+            if UnregisterStateDriver then pcall(UnregisterStateDriver, frame, "visibility") end
+        end
+        if not frame:IsShown() then 
+            frame:Show()
+            frame._wt_hideOnEditModeExit = true
+        end
         ApplyFramePosition(frame, configKey, shouldHide)
     end)
     
+    LEM:RegisterCallback('exit', function()
+        if frame._wt_VisibilityDriver then 
+            if RegisterStateDriver then pcall(RegisterStateDriver, frame, "visibility", frame._wt_VisibilityDriver) end
+        end
+        if frame._wt_hideOnEditModeExit then
+            frame._wt_hideOnEditModeExit = nil
+            frame:Hide()
+        end
+    end)
+
     LEM:RegisterCallback('layout', function(layoutName)
         LoadFrameConfig(configKey)
         local shouldHide = not enabledCheckFn()
@@ -317,7 +333,6 @@ function WilduUI.InitializeRangeFrame()
         else
             rangeFrame.text:SetText("")
             rangeFrame:SetAlpha(0)
-
         end
     end
 
@@ -380,7 +395,7 @@ function WilduUI.InitializeMountableAreaIndicator()
     ApplyFramePosition(mountFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_mountableArea)
 
 
-    ApplyVisibilityDriverToFrame(mountFrame, "[outdoors,nocombat] show; [advflyable] show; hide")
+    ApplyVisibilityDriverToFrame(mountFrame, "[outdoors, advflyable] show; hide")
     
     RegisterEditModeCallbacks(mountFrame, CONFIG_KEY, function()
         return ns.Addon.db.profile.wilduUI_mountableArea
@@ -845,10 +860,6 @@ function WilduUI.InitializePlayerCombatIndicator()
     playerCombatFrame.icon:SetTexture("Interface\\AddOns\\!WilduTools\\Media\\Icons\\CombatStylized.blp")
     
     ApplyFramePosition(playerCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_playerCombat)
-    
-    if not ns.Addon.db.profile.wilduUI_playerCombat then
-        playerCombatFrame.icon:SetAlpha(0)
-    end
     
     ApplyVisibilityDriverToFrame(playerCombatFrame, "[combat] show; hide")
     
