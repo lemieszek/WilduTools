@@ -7,7 +7,6 @@ local API = ns.API
 ns.WilduUI = WilduUI
 local DEBUG = ns.DEBUG
 
-
 -- ============================================================================
 -- CONSTANTS & CONFIGURATION
 -- ============================================================================
@@ -315,7 +314,6 @@ function WilduUI.InitializeRangeFrame()
     end
     rangeFrame._wt_initialized = true
     
-    
     rangeFrame:SetSize(120, 24)
     local config = LoadFrameConfig(CONFIG_KEY)
     rangeFrame.text = rangeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -324,10 +322,13 @@ function WilduUI.InitializeRangeFrame()
 
     ApplyFramePosition(rangeFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetRangeFrame)
     
+    local _, classFilename  = UnitClass("player")
+    
     local function updateRangeText()
         local min, max = API:GetRange("target")
         if min or max then
             local rangeText = max and string.format("%d - %d", min, max) or string.format("%d+", min)
+            rangeText = API:ColorizeRange(rangeText, max and max or min, playerClass)
             rangeFrame.text:SetText(rangeText)
             rangeFrame:SetAlpha(1)
         else
@@ -898,7 +899,7 @@ function WilduUI.InitializeTargetCombatIndicator()
 
     ApplyFramePosition(targetCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetCombat)
     
-    ApplyVisibilityDriverToFrame(rangeFrame, "[target=target,exists] show; hide")
+    ApplyVisibilityDriverToFrame(targetCombatFrame, "[target=target,exists] show; hide")
     CreateThrottledUpdate(targetCombatFrame, 0.1, function(self)
 		if LEM:IsInEditMode() then
 			self:SetAlpha(1)  -- Show at full alpha in edit mode

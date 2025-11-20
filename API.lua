@@ -221,3 +221,67 @@ end
 function API:IsPlayerStealthed()
   return IsStealthed()
 end
+
+
+local RANGE_COLORS = {
+    MELEE = {r = 0.0, g = 1.0, b = 0.0},        -- Green for melee
+    CLOSE = {r = 1.0, g = 1.0, b = 0.0},        -- Yellow for 20-30 yards
+    MEDIUM = {r = 1.0, g = 0.65, b = 0.0},      -- Orange for middle
+    MEDIUM_FAR = {r = 1.0, g = 0.60, b = 0.0},      -- Orange for middle
+    FAR = {r = 1.0, g = 0.55, b = 0.0},         -- Dark orange for approaching out of range
+    OUT_OF_RANGE = {r = 1.0, g = 0.0, b = 0.0}, -- Red for out of range
+}
+
+-- Class-specific max ranges (from the spell data analysis)
+local CLASS_MAX_RANGES = {
+    DEATHKNIGHT = 40,
+    DEMONHUNTER = 30,
+    DRUID = 40,
+    EVOKER = 40,
+    HUNTER = 40,
+    MAGE = 40,
+    MONK = 40,
+    PALADIN = 40,
+    PRIEST = 40,
+    ROGUE = 30,
+    SHAMAN = 40,
+    WARLOCK = 40,
+    WARRIOR = 30,
+}
+
+local function GetRangeColor(range, playerClass)
+    -- Default to 40 yards if class unknown
+    local maxRange = CLASS_MAX_RANGES[classFilename] or 40
+    
+    if range <= 5 then
+        return RANGE_COLORS.MELEE
+    end
+    
+    if range <= 10 then
+        return RANGE_COLORS.CLOSE
+    end
+    
+    if range <= maxRange -15 then
+        return RANGE_COLORS.MEDIUM
+    end
+    if range <= maxRange -7 then
+        return RANGE_COLORS.MEDIUM_FAR
+    end
+    
+    if range <= maxRange  then
+        return RANGE_COLORS.FAR
+    end
+    
+    -- Out of range (maxRange-4 and beyond) - Red
+    return RANGE_COLORS.OUT_OF_RANGE
+end
+
+function API:ColorizeRange(rangeText, range, playerClass)
+    local color = GetRangeColor(range, playerClass)
+    local hex = string.format("%02x%02x%02x", 
+        math.floor(color.r * 255), 
+        math.floor(color.g * 255), 
+        math.floor(color.b * 255))
+    
+    return string.format("|cff%s%s|r", hex, rangeText)
+end
