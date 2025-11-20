@@ -277,11 +277,34 @@ local function CreateTickerUpdate(frame, interval, updateFn,checkForIsShown)
     end)
 end
 
+local ApplyVisibilityDriverToFrame;
+local visiblityDriverPostCombatFrame = CreateFrame("Frame", nil, UIParent)
+visiblityDriverPostCombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+visiblityDriverPostCombatFrame.delayedApplications = {}
+visiblityDriverPostCombatFrame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_ENABLED" and not InCombatLockdown() then
+        for i, application in ipairs(visiblityDriverPostCombatFrame.delayedApplications) do
+            ApplyVisibilityDriverToFrame(application.frame, application.expression)
+        end
+        visiblityDriverPostCombatFrame.delayedApplications = {}
+    end
+end)
+
 ---Apply or remove a visibility state driver for a frame
 ---@param frame Frame The WoW UI frame to manage visibility for
 ---@param expression string|nil State driver expression (nil to remove driver) - https://warcraft.wiki.gg/wiki/Macro_conditionals - ex "[advflyable, mounted] show; [advflyable, stance:3] show; hide"
-local function ApplyVisibilityDriverToFrame(frame, expression)
+ApplyVisibilityDriverToFrame = function (frame, expression, shouldHideInCombat)
     if not frame then return end
+    if InCombatLockdown() then
+        if shouldHideInCombat then
+            frame:Hide()
+        end
+        table.insert(visiblityDriverPostCombatFrame.delayedApplications, {
+            frame = frame,
+            expression = expression
+        })
+        return
+    end
     if not expression then
         if frame._wt_VisibilityDriver then
             if UnregisterStateDriver then pcall(UnregisterStateDriver, frame, "visibility") end
@@ -295,8 +318,6 @@ local function ApplyVisibilityDriverToFrame(frame, expression)
         if ok then frame._wt_VisibilityDriver = expression end
     end
 end
-
-
 -- ============================================================================
 -- RANGE FRAME
 -- ============================================================================
@@ -337,7 +358,7 @@ function WilduUI.InitializeRangeFrame()
         end
     end
 
-    ApplyVisibilityDriverToFrame(rangeFrame, "[target=target,exists] show; hide")
+    ApplyVisibilityDriverToFrame(rangeFrame, "[target=target,exists] show; hide", false)
     CreateTickerUpdate(rangeFrame, 0.5, function()
         
         if LEM:IsInEditMode() then
@@ -384,7 +405,7 @@ function WilduUI.InitializeMountableAreaIndicator()
     end
     mountFrame._wt_initialized = true
     
-    local DEFAULT_CONFIG = { y = 50 }
+    local DEFAULT_CONFIG = { y = 50, hide_incombat = false, hide_whenmounted = false }
     mountFrame:SetSize(32, 32)
     local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
 
@@ -393,16 +414,63 @@ function WilduUI.InitializeMountableAreaIndicator()
     mountFrame.icon:SetAllPoints(mountFrame)
     mountFrame.icon:SetAtlas("Fyrakk-Flying-Icon", true)
     
+    mountFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    mountFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    mountFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    mountFrame:RegisterEvent("MOUNT_JOURNAL_USABILITY_CHANGED")
+    mountFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
+    local function ApplyMountableVisibility()
+        local isMountable = C_Spell.IsSpellUsable(150544)
+        if config.hide_incombat and InCombatLockdown() then isMountable = false end
+
+        if config.hide_whenmounted then
+            if IsMounted() or GetShapeshiftFormID() == 3 and select(2, UnitClass("player"))== "DRUID" then
+              isMountable = false
+            end
+        end
+        if isMountable then mountFrame:Show() else mountFrame:Hide() end 
+    end
+    mountFrame:SetScript("OnEvent", function(_, event)
+        ApplyMountableVisibility()
+    end)
+    ApplyMountableVisibility()
+
+
     ApplyFramePosition(mountFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_mountableArea)
-
-
-    ApplyVisibilityDriverToFrame(mountFrame, "[outdoors, flyable, advflyable] show; hide")
     
     RegisterEditModeCallbacks(mountFrame, CONFIG_KEY, function()
         return ns.Addon.db.profile.wilduUI_mountableArea
     end)
-    
-    RegisterFrameWithLEM(mountFrame, CONFIG_KEY)
+
+    LEM:RegisterCallback('exit', function()
+        ApplyMountableVisibility()
+    end)
+    local additionalSettings = {
+        {
+			name = 'Hide when already mounted',
+			kind = LEM.SettingType.Checkbox,
+			default = DEFAULT_CONFIG.hide_whenmounted,
+			get = function()
+				return ns.Addon.db.profile.editMode[CONFIG_KEY].hide_whenmounted
+			end,
+			set = function(_, v)
+				ns.Addon.db.profile.editMode[CONFIG_KEY].hide_whenmounted = v
+			end,
+		},
+        {
+            name = 'Hide in combat (ex. Dimensius or Dawnbreaker)',
+            kind = LEM.SettingType.Checkbox,
+            default = DEFAULT_CONFIG.hide_incombat,
+            get = function()
+                return ns.Addon.db.profile.editMode[CONFIG_KEY].hide_incombat
+            end,
+            set = function(_, v)
+                ns.Addon.db.profile.editMode[CONFIG_KEY].hide_incombat = v
+            end,
+        },
+    }
+
+    RegisterFrameWithLEM(mountFrame, CONFIG_KEY, additionalSettings)
     
     DEBUG.checkpointDebugTimer("WILDUUI_INIT_MOUNTFRAME_DONE", "WILDUUI_INIT_MOUNTFRAME_START")
 end
@@ -486,7 +554,7 @@ function WilduUI.InitializeSpellOnCD()
         }
     }
     
-    RegisterFrameWithLEM(spellOnCDFrame, CONFIG_KEY, DEFAULT_CONFIG, additionalSettings)
+    RegisterFrameWithLEM(spellOnCDFrame, CONFIG_KEY, additionalSettings)
     
     -- Event handler for spell cast failure
     spellOnCDEventFrame = CreateFrame("Frame", "WilduTools_SpellOnCD_Event", UIParent)
@@ -640,7 +708,7 @@ function WilduUI.InitializeCrosshair()
 		end
 		
 		local visibility = ns.Addon.db.profile.editMode[CONFIG_KEY].visibility or 'Always'
-		local inCombat = UnitAffectingCombat("player")
+		local inCombat = InCombatLockdown()
 		local inInstance = IsInInstance()
 
 		local shouldShow = false
@@ -833,7 +901,7 @@ function WilduUI.InitializeCrosshair()
     		},
 		},
 	}
-    RegisterFrameWithLEM(crosshairParent, CONFIG_KEY, DEFAULT_CONFIG, additionalSettings)
+    RegisterFrameWithLEM(crosshairParent, CONFIG_KEY, additionalSettings)
     
 end
 
@@ -862,7 +930,7 @@ function WilduUI.InitializePlayerCombatIndicator()
     
     ApplyFramePosition(playerCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_playerCombat)
     
-    ApplyVisibilityDriverToFrame(playerCombatFrame, "[combat] show; hide")
+    ApplyVisibilityDriverToFrame(playerCombatFrame, "[combat] show; hide", false)
     
     RegisterEditModeCallbacks(playerCombatFrame, CONFIG_KEY, function()
         return ns.Addon.db.profile.wilduUI_playerCombat
@@ -899,7 +967,7 @@ function WilduUI.InitializeTargetCombatIndicator()
 
     ApplyFramePosition(targetCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetCombat)
     
-    ApplyVisibilityDriverToFrame(targetCombatFrame, "[target=target,exists] show; hide")
+    ApplyVisibilityDriverToFrame(targetCombatFrame, "[target=target,exists] show; hide", false)
     CreateThrottledUpdate(targetCombatFrame, 0.1, function(self)
 		if LEM:IsInEditMode() then
 			self:SetAlpha(1)  -- Show at full alpha in edit mode

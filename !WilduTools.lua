@@ -51,8 +51,10 @@ PlayerLoginFrame:SetScript("OnEvent", function()
 		WilduUI.InitializeCrosshair()
 		WilduUI.InitializeTargetCombatIndicator()
 		WilduUI.InitializePlayerCombatIndicator()
-		if isEnabled("general_alwaysEnableAllActionBars") then
-			CVars.enableAllActionBars()
+		if not InCombatLockdown() then
+			if isEnabled("general_alwaysEnableAllActionBars") then
+				CVars.enableAllActionBars()
+			end
 		end
         DEBUG.checkpointDebugTimer("PLAYER_LOGIN_DELAYED_DONE", "PLAYER_LOGIN_DELAYED_START")
 	end)
@@ -171,10 +173,10 @@ CombatFrame:SetScript("OnEvent", function(_self, event)
 
 	elseif event == "PLAYER_REGEN_ENABLED" then
 		-- leaving combat
-		if isEnabled("automation_druidFormCombatPreservation") then
-			Automation:SetFormPreservation(false)
-		end
 		if not InCombatLockdown() then
+			if isEnabled("automation_druidFormCombatPreservation") then
+				Automation:SetFormPreservation(false)
+			end
 			if isEnabled("actionBars_disableMouseOnActionBars_onlyInCombat") then
 				ns.ActionBars.enableMouseOnBar("ActionButton")
 				ns.ActionBars.enableMouseOnBar("MultiBarBottomLeftButton")
@@ -186,6 +188,9 @@ CombatFrame:SetScript("OnEvent", function(_self, event)
 				ns.ActionBars.enableMouseOnBar("MultiBar7Button")
 			end
 			if isEnabled("actionBars_disableMouseOnExtraActionBar") then ActionBars.disableMouseOnExtraActionBarArt() end
+			if isEnabled("general_alwaysEnableAllActionBars") then
+				CVars.enableAllActionBars()
+			end
 		end
 	end
     DEBUG.checkpointDebugTimer("COMBAT_FRAME_EVENT_END", "COMBAT_FRAME_EVENT_START")
@@ -1216,22 +1221,3 @@ end
 function addon:ShowConfig()
 	Settings.OpenToCategory("WilduTools")
 end
-
-
-
-local MountableEventFrame = CreateFrame("Frame", nil, UIParent)
-MountableEventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-MountableEventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-MountableEventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-MountableEventFrame:RegisterEvent("MOUNT_JOURNAL_USABILITY_CHANGED")
-MountableEventFrame:SetScript("OnEvent", function(ev1, e2)
-	print(e1, e2)
-	-- Do druid form and mount icon logic HERE
-	-- Mount logic - if mount usable - true
-	-- if flyable area - flying icon
-	-- if ground area - ground mount icon (maybe different mount ids?)
-	
-	-- mountable icon option - hide in combat
-
-	-- all icon options - strata 
-end)
