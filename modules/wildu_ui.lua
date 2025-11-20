@@ -16,7 +16,6 @@ local DEBUG = ns.DEBUG
 local HIDDEN_POSITION = { point = 'TOP', x = 0, y = 500 }
 local DEFAULT_SCALE = 1
 local DEFAULT_ALPHA = 1
-local DEFAULT_THROTTLE = 0.1
 
 
 -- ============================================================================
@@ -24,36 +23,62 @@ local DEFAULT_THROTTLE = 0.1
 -- ============================================================================
 
 
----Ensure editMode database structure exists for a frame config key
+-- Default configuration fallback
+local FRAME_DEFAULT_CONFIG = {
+    point = 'CENTER',
+    x = 0,
+    y = 0,
+    scale = DEFAULT_SCALE,
+    alpha = DEFAULT_ALPHA,
+}
+
+---Ensure and load frame configuration with comprehensive fallback chain
 ---@param configKey string The database key in editMode (e.g., "rangeCheck", "mountIcon")
----@param defaultConfig table Default position/settings table
----@return table The configuration table
-local function EnsureEditModeConfig(configKey, defaultConfig)
+---@param defaultConfig table Default position/settings table (applied to profile first)
+---@return table The configuration table with all properties resolved
+local function LoadFrameConfig(configKey, defaultConfig)
+    -- Ensure editMode database structure exists
+    defaultConfig = defaultConfig or {}
     if not ns.Addon.db.profile.editMode then
         ns.Addon.db.profile.editMode = {}
     end
+
+    -- Initialize config entry if missing
     if not ns.Addon.db.profile.editMode[configKey] then
-        ns.Addon.db.profile.editMode[configKey] = CopyTable(defaultConfig)
+        ns.Addon.db.profile.editMode[configKey] = {}
     end
-    return ns.Addon.db.profile.editMode[configKey]
+
+    local storedConfig = ns.Addon.db.profile.editMode[configKey]
+
+    -- Build result with three-tier fallback: stored → defaultConfig → DEFAULT_CONFIG
+    local result = {}
+    
+    -- Get all unique keys from all sources
+    local allKeys = {}
+    for key in pairs(FRAME_DEFAULT_CONFIG) do
+        allKeys[key] = true
+    end
+    for key in pairs(defaultConfig) do
+        allKeys[key] = true
+    end
+    for key in pairs(storedConfig) do
+        allKeys[key] = true
+    end
+
+    -- Apply fallback chain for each property
+    for key in pairs(allKeys) do
+        result[key] = storedConfig[key] or defaultConfig[key] or FRAME_DEFAULT_CONFIG[key]
+    end
+
+    -- Update stored config to ensure missing properties are persisted
+    for key, value in pairs(result) do
+        if storedConfig[key] == nil then
+            storedConfig[key] = value
+        end
+    end
+
+    return result
 end
-
-
----Load position and scale from database with fallbacks
----@param configKey string The database key
----@param defaultConfig table Fallback defaults
----@return table Config with point, x, y, scale
-local function LoadFrameConfig(configKey, defaultConfig)
-    local config = EnsureEditModeConfig(configKey, defaultConfig)
-    return {
-        point = config.point or defaultConfig.point,
-        x = config.x or defaultConfig.x,
-        y = config.y or defaultConfig.y,
-        scale = config.scale or DEFAULT_SCALE,
-        alpha = config.alpha or DEFAULT_ALPHA,
-    }
-end
-
 
 ---Apply position and scale to a frame from config
 ---@param frame Frame The frame to position
@@ -72,9 +97,9 @@ local function ApplyFramePosition(frame, configKey, shouldHide)
                        config.x or 0, config.y or 0)
     end
     
-    frame:SetScale(config.scale or DEFAULT_SCALE)
+    frame:SetScale(config.scale)
     if frame.SetAlpha then
-        frame:SetAlpha(config.alpha or DEFAULT_ALPHA)
+        frame:SetAlpha(config.alpha)
     end
 end
 
@@ -109,7 +134,7 @@ local function RegisterEditModeCallbacks(frame, configKey, enabledCheckFn)
     end)
     
     LEM:RegisterCallback('layout', function(layoutName)
-        EnsureEditModeConfig(configKey, { point = 'CENTER', x = 0, y = 0 })
+        LoadFrameConfig(configKey)
         local shouldHide = not enabledCheckFn()
         ApplyFramePosition(frame, configKey, shouldHide)
     end)
@@ -131,7 +156,6 @@ local function CreateScaleSetting(configKey, defaultValue)
         end,
         set = function(layoutName, value)
             ns.Addon.db.profile.editMode[configKey].scale = value
-            -- This will be called on the actual frame in the settings dict
         end,
         minValue = 0.1,
         maxValue = 5,
@@ -173,15 +197,15 @@ end
 ---Register a frame with LEM and apply settings
 ---@param frame Frame The frame to register
 ---@param configKey string The database key
----@param defaultConfig table Default configuration
 ---@param additionalSettings table[] Additional LEM settings beyond Scale
-local function RegisterFrameWithLEM(frame, configKey, defaultConfig, additionalSettings)
+local function RegisterFrameWithLEM(frame, configKey, additionalSettings)
     additionalSettings = additionalSettings or {}
-    
-    LEM:AddFrame(frame, CreateOnPositionChanged(configKey), defaultConfig)
+    local config = LoadFrameConfig(configKey)
+
+    LEM:AddFrame(frame, CreateOnPositionChanged(configKey), config)
     
     local settings = {
-        CreateScaleSetting(configKey, defaultConfig.scale or DEFAULT_SCALE),
+        CreateScaleSetting(configKey, config.scale or FRAME_DEFAULT_CONFIG.scale),
     }
     
     -- Add scale update to frame
@@ -204,14 +228,57 @@ end
 ---@param throttleInterval number Seconds between updates
 ---@param updateFn function Function to call for update logic
 local function CreateThrottledUpdate(frame, throttleInterval, updateFn)
-    frame._throttle = 0
+    frame._wt_throttle = 0
     frame:SetScript("OnUpdate", function(self)
-        if GetTime() < self._throttle then
+        if GetTime() < self._wt_throttle then
             return
         end
-        self._throttle = GetTime() + throttleInterval
+        self._wt_throttle = GetTime() + throttleInterval
         updateFn(self)
     end)
+end
+
+---Wrap update logic with a repeating C_Timer.NewTicker
+---@param frame Frame The frame to associate the ticker with
+---@param interval number Seconds between updates
+---@param updateFn function Function to call for update logic
+---@param checkForIsShown boolean check for frame visibility, if hidden won't call callback
+local function CreateTickerUpdate(frame, interval, updateFn,checkForIsShown)
+    if not frame or not interval or not updateFn then
+        return
+    end
+
+    -- Cancel previous ticker if it exists
+    if frame._wt_ticker and frame._wt_ticker.Cancel then
+        frame._wt_ticker:Cancel()
+        frame._wt_ticker = nil
+    end
+
+    -- Create new repeating ticker
+    frame._wt_ticker = C_Timer.NewTicker(interval, function()
+        if not checkForIsShown or frame:IsShown() then
+            updateFn(frame)
+        end
+    end)
+end
+
+---Apply or remove a visibility state driver for a frame
+---@param frame Frame The WoW UI frame to manage visibility for
+---@param expression string|nil State driver expression (nil to remove driver) - https://warcraft.wiki.gg/wiki/Macro_conditionals - ex "[advflyable, mounted] show; [advflyable, stance:3] show; hide"
+local function ApplyVisibilityDriverToFrame(frame, expression)
+    if not frame then return end
+    if not expression then
+        if frame._wt_VisibilityDriver then
+            if UnregisterStateDriver then pcall(UnregisterStateDriver, frame, "visibility") end
+            frame._wt_VisibilityDriver = nil
+        end
+        return
+    end
+    if frame._wt_VisibilityDriver == expression then return end
+    if RegisterStateDriver then
+        local ok = pcall(RegisterStateDriver, frame, "visibility", expression)
+        if ok then frame._wt_VisibilityDriver = expression end
+    end
 end
 
 
@@ -225,47 +292,52 @@ local rangeFrame = CreateFrame("Frame", "WilduTools Range Frame", UIParent)
 
 function WilduUI.InitializeRangeFrame()
     DEBUG.startDebugTimer("WILDUUI_INIT_RANGEFRAME_START")
+    local CONFIG_KEY = "rangeCheck"
     if rangeFrame._wt_initialized then
+        ApplyFramePosition(rangeFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetRangeFrame)
         return
     end
     rangeFrame._wt_initialized = true
     
-    local CONFIG_KEY = "rangeCheck"
-    local DEFAULT_CONFIG = { point = 'CENTER', x = 0, y = 0, scale = 1 }
     
     rangeFrame:SetSize(120, 24)
-    local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
-    rangeFrame:SetPoint("CENTER", UIParent, config.point, config.x, config.y)
-    rangeFrame:SetScale(config.scale)
-    
+    local config = LoadFrameConfig(CONFIG_KEY)
     rangeFrame.text = rangeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     rangeFrame.text:SetPoint("LEFT", rangeFrame, "LEFT")
-    rangeFrame.text:SetText("No Target")
-    rangeFrame:Show()
+    rangeFrame.text:SetText("")
+
+    ApplyFramePosition(rangeFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetRangeFrame)
     
-    -- Throttled update
-    CreateThrottledUpdate(rangeFrame, DEFAULT_THROTTLE, function(self)
-        if not ns.Addon.db.profile.wilduUI_targetRangeFrame then
-            self.text:SetText("")
-            self:SetAlpha(0)
+    local function updateRangeText()
+        local min, max = API:GetRange("target")
+        if min or max then
+            local rangeText = max and string.format("%d - %d", min, max) or string.format("%d+", min)
+            rangeFrame.text:SetText(rangeText)
+            rangeFrame:SetAlpha(1)
+        else
+            rangeFrame.text:SetText("")
+            rangeFrame:SetAlpha(0)
+
+        end
+    end
+
+    ApplyVisibilityDriverToFrame(rangeFrame, "[target=target,exists] show; hide")
+    CreateTickerUpdate(rangeFrame, 0.5, function()
+        
+        if LEM:IsInEditMode() then
             return
         end
-        
-        self:SetAlpha(1)
-        
-        if not LEM:IsInEditMode() then
-            if UnitExists("target") and not UnitIsDeadOrGhost("target") then
-                local min, max = API:GetRange("target", true)
-                if min or max then
-                    local rangeText = max and string.format("%d - %d", min, max) or 
-                                      string.format("%d+", min)
-                    self.text:SetText(rangeText)
-                else
-                    self.text:SetText("")
-                end
-            else
-                self.text:SetText("")
-            end
+        if not ns.Addon.db.profile.wilduUI_targetRangeFrame then
+            rangeFrame.text:SetText("")
+            rangeFrame:SetAlpha(0)
+            return
+        end
+        updateRangeText()
+    end)
+    rangeFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    rangeFrame:SetScript("OnEvent", function(self, event, ...)
+        if event == "PLAYER_TARGET_CHANGED" then
+            updateRangeText()
         end
     end)
     
@@ -273,7 +345,7 @@ function WilduUI.InitializeRangeFrame()
         return ns.Addon.db.profile.wilduUI_targetRangeFrame
     end)
     
-    RegisterFrameWithLEM(rangeFrame, CONFIG_KEY, DEFAULT_CONFIG, {})
+    RegisterFrameWithLEM(rangeFrame, CONFIG_KEY)
     
     DEBUG.checkpointDebugTimer("WILDUUI_INIT_RANGEFRAME_DONE", "WILDUUI_INIT_RANGEFRAME_START")
 end
@@ -289,48 +361,35 @@ local mountFrame = CreateFrame("Frame", "WilduTools Mount Frame", UIParent)
 
 function WilduUI.InitializeMountableAreaIndicator()
     DEBUG.startDebugTimer("WILDUUI_INIT_MOUNTFRAME_START")
+    local CONFIG_KEY = "mountIcon"
     if mountFrame._wt_initialized then
+        ApplyFramePosition(mountFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_mountableArea)
         return
     end
     mountFrame._wt_initialized = true
     
-    local CONFIG_KEY = "mountIcon"
-    local DEFAULT_CONFIG = { point = 'CENTER', x = 0, y = 50, scale = 1 }
-    
+    local DEFAULT_CONFIG = { y = 50 }
     mountFrame:SetSize(32, 32)
     local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
-    mountFrame:SetPoint("CENTER", UIParent, config.point, config.x, config.y)
-    mountFrame:SetScale(config.scale)
+
     
     mountFrame.icon = mountFrame:CreateTexture(nil, "OVERLAY")
     mountFrame.icon:SetAllPoints(mountFrame)
     mountFrame.icon:SetAtlas("Fyrakk-Flying-Icon", true)
-    mountFrame.icon:SetAlpha(0)
-    mountFrame:Show()
     
-    -- Throttled update (0.25 for mount check)
-    CreateThrottledUpdate(mountFrame, 0.25, function(self)
-        if not ns.Addon.db.profile.wilduUI_mountableArea then
-            self.icon:SetAlpha(0)
-            return
-        end
-        if LEM:IsInEditMode() then
-			self.icon:SetAlpha(1)
-			return
-		end
-        local canMount = API:CanPlayerMount()
-        self.icon:SetAlpha(canMount and 1 or 0)
-    end)
+    ApplyFramePosition(mountFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_mountableArea)
+
+
+    ApplyVisibilityDriverToFrame(mountFrame, "[outdoors,nocombat] show; [advflyable] show; hide")
     
     RegisterEditModeCallbacks(mountFrame, CONFIG_KEY, function()
         return ns.Addon.db.profile.wilduUI_mountableArea
     end)
     
-    RegisterFrameWithLEM(mountFrame, CONFIG_KEY, DEFAULT_CONFIG, {})
+    RegisterFrameWithLEM(mountFrame, CONFIG_KEY)
     
     DEBUG.checkpointDebugTimer("WILDUUI_INIT_MOUNTFRAME_DONE", "WILDUUI_INIT_MOUNTFRAME_START")
 end
-
 
 -- ============================================================================
 -- SPELL ON COOLDOWN FRAME
@@ -360,20 +419,19 @@ local spellOnCDEventFrame = nil
 
 
 function WilduUI.InitializeSpellOnCD()
+    local CONFIG_KEY = "spellOnCD"
     if spellOnCDFrame._wt_initialized then return end
     spellOnCDFrame._wt_initialized = true
     
-    local CONFIG_KEY = "spellOnCD"
-    local DEFAULT_CONFIG = { point = 'CENTER', x = 0, y = 0, scale = 1, alpha = 1, zoom = 0 }
+    local DEFAULT_CONFIG = { x = -50 }
     
-    EnsureEditModeConfig(CONFIG_KEY, DEFAULT_CONFIG)
-    local config = ns.Addon.db.profile.editMode[CONFIG_KEY]
+    local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
     
     spellOnCDFrame:ClearAllPoints()
     spellOnCDFrame:SetPoint("CENTER", UIParent, config.point or 'CENTER', 
                              config.x or 0, config.y or 0)
-    spellOnCDFrame:SetScale(config.scale or DEFAULT_SCALE)
-    spellOnCDFrame:SetAlpha(config.alpha or DEFAULT_ALPHA)
+    spellOnCDFrame:SetScale(config.scale)
+    spellOnCDFrame:SetAlpha(config.alpha)
     
     -- Apply initial zoom
     local function ApplyZoom(zoomValue)
@@ -460,21 +518,17 @@ end
 
 
 local crosshairParent = CreateFrame("Frame", "WilduTools Crosshair", UIParent)
-crosshairParent:EnableMouse(false)
 crosshairParent._wt_initialized = false
 
-
 function WilduUI.InitializeCrosshair()
-    if crosshairParent._wt_initialized then return end
+    local CONFIG_KEY = "crosshair"
+    if crosshairParent._wt_initialized then 
+        ApplyFramePosition(crosshairParent, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_crosshair)
+        return
+    end
     crosshairParent._wt_initialized = true
     
-    local CONFIG_KEY = "crosshair"
     local DEFAULT_CONFIG = {
-        point = 'CENTER',
-        x = 0,
-        y = 0,
-        scale = 1,
-        alpha = 1,
         thickness = 4,
         inner_length = 24,
         border_size = 4,
@@ -486,19 +540,18 @@ function WilduUI.InitializeCrosshair()
 		visibility = "Always"
     }
     
-    local config = EnsureEditModeConfig(CONFIG_KEY, DEFAULT_CONFIG)
+    local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
     
-    local thickness = config.thickness or 4
-    local inner_length = config.inner_length or 24
-    local border_size = config.border_size or 4
-    local class_colored = (config.class_colored == nil) and true or config.class_colored
-    local alpha = config.alpha or 1
-    local scale = config.scale or 1
-    
+    local thickness = config.thickness
+    local inner_length = config.inner_length
+    local border_size = config.border_size
+    local class_colored = config.class_colored
+
     crosshairParent:SetSize(inner_length + thickness + border_size, 
                             inner_length + thickness + border_size)
-    ApplyFramePosition(crosshairParent, CONFIG_KEY)
-    crosshairParent:SetAlpha(alpha)
+
+    ApplyFramePosition(crosshairParent, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_crosshair)
+
 
 
     local function getClassColor()
@@ -532,7 +585,7 @@ function WilduUI.InitializeCrosshair()
                                     thickness, "CENTER", "CENTER", 0, 0, 1)
     
 	local function UpdateColor()
-		local a = ns.Addon.db.profile.editMode[CONFIG_KEY].alpha or alpha
+		local a = ns.Addon.db.profile.editMode[CONFIG_KEY].alpha
 		local class_col = ns.Addon.db.profile.editMode[CONFIG_KEY].class_colored
 
 		if class_col == nil or class_col then
@@ -558,7 +611,7 @@ function WilduUI.InitializeCrosshair()
     UpdateColor()
 
 
-	CreateThrottledUpdate(crosshairParent, 0.1, function(self)
+	CreateThrottledUpdate(crosshairParent, 1, function(self)
 		if not ns.Addon.db.profile.wilduUI_crosshair then
 			self:SetAlpha(0)
 			return
@@ -768,12 +821,6 @@ function WilduUI.InitializeCrosshair()
     
 end
 
-
-function WilduUI.UnInitializeCrosshair()
-    crosshairParent:SetAlpha(0)
-end
-
-
 -- ============================================================================
 -- PLAYER IN COMBAT INDICATOR
 -- ============================================================================
@@ -781,49 +828,37 @@ end
 local playerCombatFrame = CreateFrame("Frame", "WilduTools Player Combat", UIParent)
 
 function WilduUI.InitializePlayerCombatIndicator()
-    if playerCombatFrame._wt_initialized then return end
+    local CONFIG_KEY = "playerCombat"
+    if playerCombatFrame._wt_initialized then 
+        ApplyFramePosition(playerCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_playerCombat)
+        return 
+    end
     playerCombatFrame._wt_initialized = true
     
-    local CONFIG_KEY = "playerCombat"
-    local DEFAULT_CONFIG = { point = 'CENTER', x = -50, y = 0, scale = 1 }
+    local DEFAULT_CONFIG = { x = -50, y = -50 }
     
     playerCombatFrame:SetSize(32, 32)
     local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
-    playerCombatFrame:SetPoint("CENTER", UIParent, config.point, config.x, config.y)
-    playerCombatFrame:SetScale(config.scale)
     
     playerCombatFrame.icon = playerCombatFrame:CreateTexture(nil, "OVERLAY")
     playerCombatFrame.icon:SetAllPoints(playerCombatFrame)
     playerCombatFrame.icon:SetTexture("Interface\\AddOns\\!WilduTools\\Media\\Icons\\CombatStylized.blp")
-    playerCombatFrame.icon:SetAlpha(0)
-    playerCombatFrame:Show()
     
-    -- Throttled update (0.1 for combat status)
-    CreateThrottledUpdate(playerCombatFrame, 0.1, function(self)
-        if not ns.Addon.db.profile.wilduUI_playerCombat then
-            self.icon:SetAlpha(0)
-            return
-        end
-		-- PREVIEW IN EDIT MODE
-		if LEM:IsInEditMode() then
-			self.icon:SetAlpha(1)  -- Show at full alpha in edit mode
-			return
-		end
-        
-        local inCombat = UnitAffectingCombat("player")
-        self.icon:SetAlpha(inCombat and 1 or 0)
-    end)
+    ApplyFramePosition(playerCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_playerCombat)
+    
+    if not ns.Addon.db.profile.wilduUI_playerCombat then
+        playerCombatFrame.icon:SetAlpha(0)
+    end
+    
+    ApplyVisibilityDriverToFrame(playerCombatFrame, "[combat] show; hide")
     
     RegisterEditModeCallbacks(playerCombatFrame, CONFIG_KEY, function()
         return ns.Addon.db.profile.wilduUI_playerCombat
     end)
     
-    RegisterFrameWithLEM(playerCombatFrame, CONFIG_KEY, DEFAULT_CONFIG, {})
+    RegisterFrameWithLEM(playerCombatFrame, CONFIG_KEY)
 end
 
-function WilduUI.UnInitializePlayerCombatIndicator()
-    playerCombatFrame:SetAlpha(0)
-end
 
 
 -- ============================================================================
@@ -833,40 +868,37 @@ end
 local targetCombatFrame = CreateFrame("Frame", "WilduTools Target Combat", UIParent)
 
 function WilduUI.InitializeTargetCombatIndicator()
-    if targetCombatFrame._wt_initialized then return end
+    local CONFIG_KEY = "targetCombat"
+    if targetCombatFrame._wt_initialized then
+        ApplyFramePosition(targetCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetCombat)
+        return
+    end
     targetCombatFrame._wt_initialized = true
     
-    local CONFIG_KEY = "targetCombat"
-    local DEFAULT_CONFIG = { point = 'CENTER', x = 50, y = 0, scale = 1 }
+    local DEFAULT_CONFIG = { x = 50, y = -50 }
     
     targetCombatFrame:SetSize(32, 32)
     local config = LoadFrameConfig(CONFIG_KEY, DEFAULT_CONFIG)
-    targetCombatFrame:SetPoint("CENTER", UIParent, config.point, config.x, config.y)
-    targetCombatFrame:SetScale(config.scale)
+
     
     targetCombatFrame.icon = targetCombatFrame:CreateTexture(nil, "OVERLAY")
     targetCombatFrame.icon:SetAllPoints(targetCombatFrame)
     targetCombatFrame.icon:SetTexture("Interface\\AddOns\\!WilduTools\\Media\\Icons\\CombatStylized.blp")
-    targetCombatFrame.icon:SetAlpha(0)
-    targetCombatFrame:Show()
-    
-    -- Throttled update (0.1 for combat status)
-    CreateThrottledUpdate(targetCombatFrame, 0.1, function(self)
-        if not ns.Addon.db.profile.wilduUI_targetCombat then
-            self.icon:SetAlpha(0)
-            return
-        end
 
+    ApplyFramePosition(targetCombatFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_targetCombat)
+    
+    ApplyVisibilityDriverToFrame(rangeFrame, "[target=target,exists] show; hide")
+    CreateThrottledUpdate(targetCombatFrame, 0.1, function(self)
 		if LEM:IsInEditMode() then
-			self.icon:SetAlpha(1)  -- Show at full alpha in edit mode
+			self:SetAlpha(1)  -- Show at full alpha in edit mode
 			return
 		end
         
         if UnitExists("target") then
             local inCombat = UnitAffectingCombat("target")
-            self.icon:SetAlpha(inCombat and 1 or 0)
+            self:SetAlpha(inCombat and 1 or 0)
         else
-            self.icon:SetAlpha(0)
+            self:SetAlpha(0)
         end
     end)
     
@@ -874,9 +906,5 @@ function WilduUI.InitializeTargetCombatIndicator()
         return ns.Addon.db.profile.wilduUI_targetCombat
     end)
     
-    RegisterFrameWithLEM(targetCombatFrame, CONFIG_KEY, DEFAULT_CONFIG, {})
-end
-
-function WilduUI.UnInitializeTargetCombatIndicator()
-    targetCombatFrame:SetAlpha(0)
+    RegisterFrameWithLEM(targetCombatFrame, CONFIG_KEY)
 end

@@ -51,7 +51,7 @@ PlayerLoginFrame:SetScript("OnEvent", function()
 		WilduUI.InitializeCrosshair()
 		WilduUI.InitializeTargetCombatIndicator()
 		WilduUI.InitializePlayerCombatIndicator()
-		WilduUI.InitializeSpellOnCD()
+		-- WilduUI.InitializeSpellOnCD()
 		if isEnabled("general_alwaysEnableAllActionBars") then
 			CVars.enableAllActionBars()
 		end
@@ -930,18 +930,18 @@ function addon:OnInitialize()
 								get = function(info) return self.db.profile.wilduUI_mountableArea end,
 								set = function(info, v) 
 									self.db.profile.wilduUI_mountableArea = v
-									if v then WilduUI.InitializeMountableAreaIndicator() end
+									WilduUI.InitializeMountableAreaIndicator()
 								end,
 							},
-							spellOnCD = {
-								type = "toggle",
-								width = "full",
-								name = "WORK IN PROGRESS: Spell-on-CD Alert",
-								desc = "Show an alert icon when a player's spell fails to cast",
-								descStyle = "inline",
-								get = function(info) return self.db.profile.wilduUI_spellOnCD end,
-								set = function(info, v) self.db.profile.wilduUI_spellOnCD = v; if v then WilduUI.InitializeSpellOnCD() end end,
-							},
+							-- spellOnCD = {
+							-- 	type = "toggle",
+							-- 	width = "full",
+							-- 	name = "WORK IN PROGRESS: Spell-on-CD Alert",
+							-- 	desc = "Show an alert icon when a player's spell fails to cast",
+							-- 	descStyle = "inline",
+							-- 	get = function(info) return self.db.profile.wilduUI_spellOnCD end,
+							-- 	set = function(info, v) self.db.profile.wilduUI_spellOnCD = v; if v then WilduUI.InitializeSpellOnCD() end end,
+							-- },
 							crosshair = {
 								type = "toggle",
 								width = "full",
@@ -949,7 +949,7 @@ function addon:OnInitialize()
 								desc = "Show a simple class-colored crosshair in the center of the screen",
 								descStyle = "inline",
 								get = function(info) return self.db.profile.wilduUI_crosshair end,
-								set = function(info, v) self.db.profile.wilduUI_crosshair = v; if v then WilduUI.InitializeCrosshair() else WilduUI.UnInitializeCrosshair() end end,
+								set = function(info, v) self.db.profile.wilduUI_crosshair = v; WilduUI.InitializeCrosshair() end,
 							},
 							playerCombat = {
 								type = "toggle",
@@ -958,7 +958,7 @@ function addon:OnInitialize()
 								desc = "Show an icon when the player is in combat",
 								descStyle = "inline",
 								get = function(info) return self.db.profile.wilduUI_playerCombat end,
-								set = function(info, v) self.db.profile.wilduUI_playerCombat = v; if v then WilduUI.InitializePlayerCombatIndicator() end end,
+								set = function(info, v) self.db.profile.wilduUI_playerCombat = v; WilduUI.InitializePlayerCombatIndicator() end,
 							},
 							targetCombat = {
 								type = "toggle",
@@ -967,7 +967,7 @@ function addon:OnInitialize()
 								desc = "Show an icon when your target is in combat",
 								descStyle = "inline",
 								get = function(info) return self.db.profile.wilduUI_targetCombat end,
-								set = function(info, v) self.db.profile.wilduUI_targetCombat = v; if v then WilduUI.InitializeTargetCombatIndicator() end end,
+								set = function(info, v) self.db.profile.wilduUI_targetCombat = v; WilduUI.InitializeTargetCombatIndicator() end,
 							},
 
 						},

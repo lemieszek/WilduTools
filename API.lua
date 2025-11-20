@@ -187,9 +187,10 @@ end
 ---Get minimum and maximum range for a target
 ---@param unit string UnitID to check range for (e.g., "target")
 ---@param checkVisible boolean  
-function API:GetRange(unit, checkVisible)
-  return LibRangeCheck:GetRange(unit, checkVisible);
+function API:GetRange(unit)
+  return LibRangeCheck:GetRange(unit, true);
 end
+
 
 
 -- ============================================================================
