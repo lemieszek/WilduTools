@@ -395,7 +395,7 @@ function WilduUI.InitializeMountableAreaIndicator()
     ApplyFramePosition(mountFrame, CONFIG_KEY, not ns.Addon.db.profile.wilduUI_mountableArea)
 
 
-    ApplyVisibilityDriverToFrame(mountFrame, "[outdoors, advflyable] show; hide")
+    ApplyVisibilityDriverToFrame(mountFrame, "[outdoors, flyable, advflyable] show; hide")
     
     RegisterEditModeCallbacks(mountFrame, CONFIG_KEY, function()
         return ns.Addon.db.profile.wilduUI_mountableArea
