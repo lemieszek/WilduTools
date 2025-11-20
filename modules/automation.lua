@@ -127,7 +127,7 @@ function Automation:InitializeGossips()
   DEBUG.trackEventRegistered("GOSSIP_SHOW", "Automation")
   
   GossipFrame:HookScript("OnShow", function()
-    if Automation_InitializeGossips_Throttle ~= nil and UpdateFrameLasAutomation_InitializeGossips_ThrottletUpdate > GetTime() - 0.2 then
+    if Automation_InitializeGossips_Throttle ~= nil and Automation_InitializeGossips_Throttle > GetTime() - 0.2 then
         return
     end
     Automation_InitializeGossips_Throttle = GetTime()

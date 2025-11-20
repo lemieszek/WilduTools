@@ -51,7 +51,6 @@ PlayerLoginFrame:SetScript("OnEvent", function()
 		WilduUI.InitializeCrosshair()
 		WilduUI.InitializeTargetCombatIndicator()
 		WilduUI.InitializePlayerCombatIndicator()
-		-- WilduUI.InitializeSpellOnCD()
 		if isEnabled("general_alwaysEnableAllActionBars") then
 			CVars.enableAllActionBars()
 		end
@@ -487,6 +486,7 @@ function addon:OnInitialize()
 							disableMouseOnActionBars = {
 								type = "toggle",
 								width = "full",
+								order = 1,
 								name = "Disable Mouse on Action Bars",
 								desc = "Master switch: when enabled, per-bar settings will be applied to disable mouse input on the selected bars",
 								descStyle = "inline",
@@ -519,6 +519,7 @@ function addon:OnInitialize()
 							disableMouseOnActionBars_onlyInCombat = {
 								type = "toggle",
 								width = "full",
+								order = 2,
 								name = "Only in Combat",
 								desc = "Apply mouse disabling only when entering combat",
 								descStyle = "inline",
@@ -552,6 +553,7 @@ function addon:OnInitialize()
 							-- Per-bar toggles
 							per_bar_disable = {
 								type = "group",
+								order = 3,
 								guiInline = true,
 								name = "Per-action-bar mouse disable",
 								args = {
@@ -647,9 +649,10 @@ function addon:OnInitialize()
 							},
 							noMouseClickExtraActionBar = {
 								type = "toggle",
+								order = 4,
 								width = "full",
-								name = "Disable ExtraActionBar Art Mouse Click",
-								desc = "Prevent accidental 'empty clicks' by disabling mouse clicks on the extra action bar button art",
+								name = "Make Art around ExtraActionBar Click-Through",
+								desc = "Prevent accidental 'empty clicks' by disabling mouse clicks on the Art around ExtraActionBar art. Button itself is still clickable",
 								descStyle = "inline",
 								get = function(info) return self.db.profile.actionBars_disableMouseOnExtraActionBar end,
 								set = function(info, v) self.db.profile.actionBars_disableMouseOnExtraActionBar = v end,
