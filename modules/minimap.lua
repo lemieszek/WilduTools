@@ -36,7 +36,7 @@ function Minimap:Init(db)
 					name = "Open Addon Settings",
 					OnClick = function()
 						if addon and addon.ShowConfig then
-							if SettingsPanel:IsShown() then SettingsPanel:Hide() else addon:ShowConfig() end
+							addon:ShowConfig()
 						end
 					end,
 				},
@@ -101,24 +101,24 @@ function Minimap:Init(db)
 					if Plumber_ToggleLandingPage then
 						Plumber_ToggleLandingPage()
 					else
-						if SettingsPanel:IsShown() then SettingsPanel:Hide() else addon:ShowConfig() end
+						addon:ShowConfig()
 					end
 				elseif ns.db.profile.general_minimapButtonOnClickShiftAction == "Reload" then
 					ReloadUI()
 				else
-					if SettingsPanel:IsShown() then SettingsPanel:Hide() else addon:ShowConfig() end
+					addon:ShowConfig()
 				end
 			elseif button == "LeftButton" then
 				if ns.db.profile.general_minimapButtonOnClickAction == "Plumber" then
 					if Plumber_ToggleLandingPage then
 						Plumber_ToggleLandingPage()
 					else
-						if SettingsPanel:IsShown() then SettingsPanel:Hide() else addon:ShowConfig() end
+						addon:ShowConfig()
 					end
 				elseif ns.db.profile.general_minimapButtonOnClickAction == "Reload" then
 					ReloadUI()
 				else
-					if SettingsPanel:IsShown() then SettingsPanel:Hide() else addon:ShowConfig() end
+					addon:ShowConfig()
 				end
 			elseif button == "RightButton" then
 				ShowMenu(Minimap.anchorFrame)
