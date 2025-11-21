@@ -1215,6 +1215,10 @@ function addon:OnInitialize()
 		print("no minimap")
 	end
 	DEBUG.checkpointDebugTimer("ADDON_ON_INITIALIZE_END", "ADDON_ON_INITIALIZE_START")
+
+	-- ns.WilduSettings.DevInit()
+	-- Settings.OpenToCategory("WilduTools2")
+
 end
 
 

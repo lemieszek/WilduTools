@@ -285,3 +285,203 @@ function API:ColorizeRange(rangeText, range, playerClass)
     
     return string.format("|cff%s%s|r", hex, rangeText)
 end
+    local SliceFrameMixin = {};
+
+    --Use the new Texture Slicing   (https://warcraft.wiki.gg/wiki/Patch_10.2.0/API_changes)
+    --The SlicedTexture is pixel-perfect but doesn't scale with parent, so we shelve this and observer Blizzard's implementation
+    local function NiceSlice_CreatePieces(frame)
+        if not frame.NineSlice then
+            frame.NineSlice = frame:CreateTexture(nil, "BACKGROUND");
+            --frame.NineSlice:SetTextureSliceMode(0); --Enum.UITextureSliceMode, 0 Stretched(Default)  1 Tiled
+            --DisableSharpening(frame.NineSlice);
+            frame.TestBG = frame:CreateTexture(nil, "OVERLAY");
+            frame.TestBG:SetAllPoints(true);
+            frame.TestBG:SetColorTexture(1, 0, 0, 0.5);
+        end
+    end
+
+    local function NiceSlice_SetCornerSize(frame, a)
+        frame.NineSlice:SetTextureSliceMargins(32, 32, 32, 32);
+        local offset = 0;
+        frame.NineSlice:ClearAllPoints();
+        frame.NineSlice:SetPoint("TOPLEFT", frame, "TOPLEFT", -offset, offset);
+        frame.NineSlice:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", offset, -offset);
+    end
+
+    local function NiceSlice_SetTexture(frame, texture)
+        frame.NineSlice:SetTexture(texture);
+    end
+
+    function API.CreateThreeSliceTextures(parent, layer, sideWidth, sideHeight, sideOffset, file, disableSharpenging)
+        local slices = {};
+        slices[1] = parent:CreateTexture(nil, layer);
+        slices[2] = parent:CreateTexture(nil, layer);
+        slices[3] = parent:CreateTexture(nil, layer);
+        slices[1]:SetPoint("LEFT", parent, "LEFT", -sideOffset, 0);
+        slices[3]:SetPoint("RIGHT", parent, "RIGHT", sideOffset, 0);
+        slices[2]:SetPoint("TOPLEFT", slices[1], "TOPRIGHT", 0, 0);
+        slices[2]:SetPoint("BOTTOMRIGHT", slices[3], "BOTTOMLEFT", 0, 0);
+
+        if sideWidth and sideHeight then
+            slices[1]:SetSize(sideWidth, sideHeight);
+            slices[3]:SetSize(sideWidth, sideHeight);
+        end
+
+        if file then
+            slices[1]:SetTexture(file);
+            slices[2]:SetTexture(file);
+            slices[3]:SetTexture(file);
+        end
+
+        if disableSharpenging then
+            DisableSharpening(slices[1]);
+            DisableSharpening(slices[2]);
+            DisableSharpening(slices[3]);
+        end
+
+        return slices
+    end
+
+    function SliceFrameMixin:CreatePieces(n)
+        --[[
+        if n == 9 then
+            NiceSlice_CreatePieces(self);
+            NiceSlice_SetCornerSize(self, 16);
+            return
+        end
+        --]]
+
+        if self.pieces then return end;
+        self.pieces = {};
+        self.numSlices = n;
+
+        -- 1 2 3
+        -- 4 5 6
+        -- 7 8 9
+
+        for i = 1, n do
+            self.pieces[i] = self:CreateTexture(nil, "BORDER");
+            -- DisableSharpening(self.pieces[i]);
+            self.pieces[i]:ClearAllPoints();
+        end
+
+        self:SetCornerSize(16);
+
+        if n == 3 then
+            self.pieces[1]:SetPoint("CENTER", self, "LEFT", 0, 0);
+            self.pieces[3]:SetPoint("CENTER", self, "RIGHT", 0, 0);
+            self.pieces[2]:SetPoint("TOPLEFT", self.pieces[1], "TOPRIGHT", 0, 0);
+            self.pieces[2]:SetPoint("BOTTOMRIGHT", self.pieces[3], "BOTTOMLEFT", 0, 0);
+
+            self.pieces[1]:SetTexCoord(0, 0.25, 0, 1);
+            self.pieces[2]:SetTexCoord(0.25, 0.75, 0, 1);
+            self.pieces[3]:SetTexCoord(0.75, 1, 0, 1);
+
+        elseif n == 9 then
+            self.pieces[1]:SetPoint("CENTER", self, "TOPLEFT", 0, 0);
+            self.pieces[3]:SetPoint("CENTER", self, "TOPRIGHT", 0, 0);
+            self.pieces[7]:SetPoint("CENTER", self, "BOTTOMLEFT", 0, 0);
+            self.pieces[9]:SetPoint("CENTER", self, "BOTTOMRIGHT", 0, 0);
+            self.pieces[2]:SetPoint("TOPLEFT", self.pieces[1], "TOPRIGHT", 0, 0);
+            self.pieces[2]:SetPoint("BOTTOMRIGHT", self.pieces[3], "BOTTOMLEFT", 0, 0);
+            self.pieces[4]:SetPoint("TOPLEFT", self.pieces[1], "BOTTOMLEFT", 0, 0);
+            self.pieces[4]:SetPoint("BOTTOMRIGHT", self.pieces[7], "TOPRIGHT", 0, 0);
+            self.pieces[5]:SetPoint("TOPLEFT", self.pieces[1], "BOTTOMRIGHT", 0, 0);
+            self.pieces[5]:SetPoint("BOTTOMRIGHT", self.pieces[9], "TOPLEFT", 0, 0);
+            self.pieces[6]:SetPoint("TOPLEFT", self.pieces[3], "BOTTOMLEFT", 0, 0);
+            self.pieces[6]:SetPoint("BOTTOMRIGHT", self.pieces[9], "TOPRIGHT", 0, 0);
+            self.pieces[8]:SetPoint("TOPLEFT", self.pieces[7], "TOPRIGHT", 0, 0);
+            self.pieces[8]:SetPoint("BOTTOMRIGHT", self.pieces[9], "BOTTOMLEFT", 0, 0);
+
+            self.pieces[1]:SetTexCoord(0, 0.25, 0, 0.25);
+            self.pieces[2]:SetTexCoord(0.25, 0.75, 0, 0.25);
+            self.pieces[3]:SetTexCoord(0.75, 1, 0, 0.25);
+            self.pieces[4]:SetTexCoord(0, 0.25, 0.25, 0.75);
+            self.pieces[5]:SetTexCoord(0.25, 0.75, 0.25, 0.75);
+            self.pieces[6]:SetTexCoord(0.75, 1, 0.25, 0.75);
+            self.pieces[7]:SetTexCoord(0, 0.25, 0.75, 1);
+            self.pieces[8]:SetTexCoord(0.25, 0.75, 0.75, 1);
+            self.pieces[9]:SetTexCoord(0.75, 1, 0.75, 1);
+        end
+    end
+
+    function SliceFrameMixin:SetCornerSize(a)
+        if self.numSlices == 3 then
+            self.pieces[1]:SetSize(a, 2*a);
+            self.pieces[3]:SetSize(a, 2*a);
+        elseif self.numSlices == 9 then
+            --if true then
+            --    NiceSlice_SetCornerSize(self, a);
+            --    return
+            --end
+            self.pieces[1]:SetSize(a, a);
+            self.pieces[3]:SetSize(a, a);
+            self.pieces[7]:SetSize(a, a);
+            self.pieces[9]:SetSize(a, a);
+        end
+    end
+
+    function SliceFrameMixin:SetCornerSizeByScale(scale)
+        self:SetCornerSize(16 * scale);
+    end
+
+    function SliceFrameMixin:SetTexture(tex)
+        --if self.NineSlice then
+        --    NiceSlice_SetTexture(self, tex);
+        --    return
+        --end
+        for i = 1, #self.pieces do
+            self.pieces[i]:SetTexture(tex);
+        end
+    end
+
+    function SliceFrameMixin:SetDisableSharpening(state)
+        for i = 1, #self.pieces do
+            self.pieces[i]:SetSnapToPixelGrid(not state);
+        end
+    end
+
+    function SliceFrameMixin:SetColor(r, g, b)
+        for i = 1, #self.pieces do
+            self.pieces[i]:SetVertexColor(r, g, b);
+        end
+    end
+
+    function SliceFrameMixin:CoverParent(padding)
+        padding = padding or 0;
+        local parent = self:GetParent();
+        if parent then
+            self:ClearAllPoints();
+            self:SetPoint("TOPLEFT", parent, "TOPLEFT", -padding, padding);
+            self:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", padding, -padding);
+        end
+    end
+
+    function SliceFrameMixin:ShowBackground(state)
+        for _, piece in ipairs(self.pieces) do
+            piece:SetShown(state);
+        end
+    end
+
+local NineSliceLayouts = {
+    WhiteBorder = true,
+    WhiteBorderBlackBackdrop = true,
+    Tooltip_Brown = true,
+    Menu_Black = true,
+    NineSlice_GenericBox = true,
+    NineSlice_GenericBox_Border = true,
+    NineSlice_GenericBox_Black = true,
+    NineSlice_GenericBox_Black_Shadowed = true,
+};
+
+function API:CreateNineSliceFrame(parent, layoutName)
+    if not (layoutName and NineSliceLayouts[layoutName]) then
+        layoutName = "WhiteBorder";
+    end
+    local f = CreateFrame("Frame", nil, parent);
+    Mixin(f, SliceFrameMixin);
+    f:CreatePieces(9);
+    f:SetTexture("Interface/AddOns/!WilduTools/Media/Art/"..layoutName);
+    f:ClearAllPoints();
+    return f
+end
