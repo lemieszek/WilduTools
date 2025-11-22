@@ -3,32 +3,38 @@ local CooldownManager = {}
 ns.CooldownManager = CooldownManager
 local DEBUG = ns.DEBUG
 
-function CooldownManager.centerBuffIconCooldownViewerAnchor()
-  ns.DEBUG.startDebugTimer("COOLDOWNMANAGER_CENTER_BUFFICON_START")
-  local width, height = BuffIconCooldownViewer:GetSize()
-  local from,parent,to,x,y= BuffIconCooldownViewer:GetPoint()
-  if from then
-    from = from:gsub("LEFT", ""):gsub("RIGHT", "")
+function CooldownManager.centerBuffIcons()
+  local itemFrameContainer = BuffIconCooldownViewer:GetLayoutChildren()
+  for i = #itemFrameContainer, 1, -1 do
+    local itemFrame = itemFrameContainer[i]
+    if not itemFrame.isActive then
+      table.remove(itemFrameContainer, i)
+    end
   end
-  if to then
-    to = to:gsub("LEFT", ""):gsub("RIGHT", "")
+  for i, itemFrame in ipairs(itemFrameContainer) do
+    itemFrame:SetParent(BuffIconCooldownViewer)
+    itemFrame:ClearAllPoints()
+    local itemSizeX = itemFrame:GetWidth() 
+    local itemSizeY = itemFrame:GetHeight()
+    local padding = 2
+
+    local displayIndex = i - 1
+    local itemsInLine = #itemFrameContainer
+    local centerOffsetX, centerOffsetY = 0, 0
+
+    local totalLineWidth = itemsInLine * itemSizeX + (itemsInLine - 1) * padding
+    centerOffsetX = -totalLineWidth / 2 + itemSizeX / 2
+      
+    local iconXOffset = itemSizeX + padding
+
+    local x, y
+
+    x = displayIndex * iconXOffset + centerOffsetX
+    y = 0
+
+    local anchorPoint = (secondDirection == 1) and "BOTTOM" or "TOP"
+
+    itemFrame:SetPoint(anchorPoint, BuffIconCooldownViewer, anchorPoint, x, y)
   end
-  BuffIconCooldownViewer:ClearAllPoints()
-  BuffIconCooldownViewer:SetPoint(from, parent,to, 0, y)
-  DEBUG.checkpointDebugTimer("COOLDOWNMANAGER_CENTER_BUFFICON_DONE", "COOLDOWNMANAGER_CENTER_BUFFICON_START")
 end
 
-function CooldownManager.centerEssentialCooldownViewerAnchor()
-  ns.DEBUG.startDebugTimer("COOLDOWNMANAGER_CENTER_ESSENTIAL_START")
-  local width, height = EssentialCooldownViewer:GetSize()
-  local from,parent,to,x,y= EssentialCooldownViewer:GetPoint()
-  if from then
-    from = from:gsub("LEFT", ""):gsub("RIGHT", "")
-  end
-  if to then
-    to = to:gsub("LEFT", ""):gsub("RIGHT", "")
-  end
-  EssentialCooldownViewer:ClearAllPoints()
-  EssentialCooldownViewer:SetPoint(from, parent,to, 0, y) 
-  DEBUG.checkpointDebugTimer("COOLDOWNMANAGER_CENTER_ESSENTIAL_DONE", "COOLDOWNMANAGER_CENTER_ESSENTIAL_START")
-end

@@ -11,7 +11,6 @@
 <Include file="libs\AceDB-3.0\AceDB-3.0.xml"/>
 <Include file="libs\AceGUI-3.0\AceGUI-3.0.xml"/>
 <Include file="libs\AceConsole-3.0\AceConsole-3.0.xml"/>
-<Include file="libs\AceConfig-3.0\AceConfig-3.0.xml"/>
 
 <Include file="libs\LibSharedMedia-3.0\lib.xml"/>
 <Script file="libs\LibDataBroker-1.1\LibDataBroker-1.1.lua"/>

@@ -74,10 +74,10 @@ function WilduSettingsListElementMixin:OnLoad()
 	self.cbrHandles = Settings.CreateCallbackHandleContainer();
 end
 
-
 function WilduSettingsListElementMixin:OnEnter()
     -- self.Tooltip:OnEnter()
 end
+
 function WilduSettingsListElementMixin:OnLeave()
     -- self.Tooltip:OnLeave()
 end
@@ -96,52 +96,66 @@ end
 function WilduSettingsListElementMixin:SetTooltipFunc(tooltipFunc)
 	WilduDefaultTooltipMixin.SetTooltipFunc(self.Tooltip, tooltipFunc);
 end
+
 function WilduSettingsListElementMixin:SetTooltipHideFunc(tooltipFunc)
 	WilduDefaultTooltipMixin.SetTooltipHideFunc(self.Tooltip, tooltipFunc);
 end
 
-
 local function InitializeSettingTooltip(initializer)
 	Settings.InitTooltip(initializer:GetName(), initializer:GetTooltip());
 end
+
 local function SetSettingPreview(initializer)
     ns.WilduSettings:SetVariableToPreview(initializer.data.setting.variable)
 end
+
 function WilduSettingsListElementMixin:Init(initializer)
-	assert(self.cbrHandles:IsEmpty());
-	self.data = initializer.data;
+    assert(self.cbrHandles:IsEmpty());
+    self.data = initializer.data;
 
-	local parentInitializer = initializer:GetParentInitializer();
-	if parentInitializer then
-		local setting = parentInitializer:GetSetting();
-		if setting then
-			self.cbrHandles:SetOnValueChangedCallback(setting:GetVariable(), self.OnParentSettingValueChanged, self);
-		end
-	end
+    local parentInitializer = initializer:GetParentInitializer();
+    if parentInitializer then
+        local setting = nil
+        if parentInitializer.GetSetting then
+            setting = parentInitializer:GetSetting()
+        end
+        if setting then
+            self.cbrHandles:SetOnValueChangedCallback(
+                setting:GetVariable(),
+                self.OnParentSettingValueChanged,
+                self
+            );
+        end
+    end
 
-	local font = initializer:IsParentInitializerInLayout() and "GameFontNormalSmall" or "GameFontNormal";
-	self.Text:SetFontObject(font);
-	self.Text:SetText(initializer:GetName());
-	self.Text:SetPoint("TOPLEFT", self, "TOPLEFT", (self:GetIndent() + 57), 0);
-	self.Text:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -40, 0);
+    local font = initializer:IsParentInitializerInLayout() and "GameFontNormalSmall" or "GameFontNormal";
+    self.Text:SetFontObject(font);
+    self.Text:SetText(initializer:GetName());
+    self.Text:SetPoint("TOPLEFT", self, "TOPLEFT", (self:GetIndent() + 57), 0);
+    self.Text:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -40, 0);
 
-	if initializer.hideText then
-		self.Text:Hide();
-	end
+    if initializer.hideText then
+        self.Text:Hide();
+    end
 
-    -- DevTools_Dump(self.data.setting.variable)
-    if ns.WilduSettings.settingPreview[initializer.data.setting.variable] then 
-        self:SetTooltipFunc(function() GenerateClosure(SetSettingPreview,initializer)(); GenerateClosure(InitializeSettingTooltip, initializer)() end);
+    if self.data and self.data.setting and ns.WilduSettings.settingPreview[self.data.setting.variable] then 
+        self:SetTooltipFunc(function()
+            GenerateClosure(SetSettingPreview, initializer)();
+            GenerateClosure(InitializeSettingTooltip, initializer)();
+        end);
         self:SetTooltipHideFunc(function() ns.WilduSettings:SetVariableToPreview(nil) end)
     else
         self:SetTooltipFunc(GenerateClosure(InitializeSettingTooltip, initializer));
     end
   
-	local newTagShown = initializer:IsNewTagShown();
-	self.NewFeature:SetShown(newTagShown);
-	if newTagShown then
-		initializer:MarkSettingAsSeen();
-	end
+    local newTagShown = nil
+    if initializer.IsNewTagShown then
+        newTagShown = initializer:IsNewTagShown()
+    end
+    self.NewFeature:SetShown(newTagShown);
+    if newTagShown then
+        initializer:MarkSettingAsSeen();
+    end
 end
 
 function WilduSettingsListElementMixin:Release()
@@ -161,9 +175,6 @@ function WilduSettingsListElementMixin:EvaluateState()
 	self:SetShown(initializer:ShouldShow());
 end
 
-
-
-
 WilduSettingsControlMixin = CreateFromMixins(WilduSettingsListElementMixin);
 
 function WilduSettingsControlMixin:OnLoad()
@@ -173,15 +184,23 @@ end
 function WilduSettingsControlMixin:OnEnter()
     WilduSettingsListElementMixin.OnEnter(self);
 end
+
 function WilduSettingsControlMixin:OnLeave()
     WilduSettingsListElementMixin.OnLeave(self);
 end
 
 function WilduSettingsControlMixin:Init(initializer)
 	WilduSettingsListElementMixin.Init(self, initializer);
-	self.cbrHandles:SetOnValueChangedCallback(self:GetSetting():GetVariable(), self.OnSettingValueChanged, self);
 
-	local evaluateStateFrameEvents = initializer:GetEvaluateStateFrameEvents();
+    -- DEFENSIVE: Some initializers (e.g. section headers) have no setting.
+    local setting = self:GetSetting();
+    if not setting then
+        return;
+    end
+
+	self.cbrHandles:SetOnValueChangedCallback(setting:GetVariable(), self.OnSettingValueChanged, self);
+
+	local evaluateStateFrameEvents = initializer.GetEvaluateStateFrameEvents and initializer:GetEvaluateStateFrameEvents();
 	if evaluateStateFrameEvents then
 		for index, event in ipairs(evaluateStateFrameEvents) do
 			self.cbrHandles:AddHandle(EventRegistry:RegisterFrameEventAndCallbackWithHandle(event, self.EvaluateState, self));
@@ -194,7 +213,7 @@ function WilduSettingsControlMixin:Release()
 end
 
 function WilduSettingsControlMixin:GetSetting()
-	return self.data.setting;
+	return self.data and self.data.setting or nil;
 end
 
 function WilduSettingsControlMixin:SetValue(value)
@@ -207,7 +226,7 @@ end
 
 function WilduSettingsControlMixin:IsEnabled()
 	local initializer = self:GetElementData();
-	local prereqs = initializer:GetModifyPredicates();
+	local prereqs = initializer.GetModifyPredicates and initializer:GetModifyPredicates();
 	if prereqs then
 		for index, prereq in ipairs(prereqs) do
 			if not prereq() then
@@ -220,7 +239,7 @@ end
 
 function WilduSettingsControlMixin:ShouldInterceptSetting(value)
 	local initializer = self:GetElementData();
-	local intercept = initializer:GetSettingIntercept();
+	local intercept = initializer.GetSettingIntercept and initializer:GetSettingIntercept();
 	if intercept then
 		local result = intercept(value);
 		assert(result ~= nil);
@@ -246,11 +265,12 @@ function WilduSettingsCheckboxControlMixin:OnLoad()
 end
 
 function WilduSettingsCheckboxControlMixin:OnEnter()
-    if self.data.setting.variable then
+    if self.data and self.data.setting and self.data.setting.variable then
         ns.WilduSettings:SetVariableToPreview(self.data.setting.variable)
     end
     WilduSettingsControlMixin.OnEnter(self)
 end
+
 function WilduSettingsCheckboxControlMixin:OnLeave()
     WilduSettingsControlMixin.OnLeave(self)
     ns.WilduSettings:SetVariableToPreview(nil)
@@ -259,8 +279,12 @@ end
 function WilduSettingsCheckboxControlMixin:Init(initializer)
 	WilduSettingsControlMixin.Init(self, initializer);
 
-	local setting = self:GetSetting();
-	local options = initializer:GetOptions();
+    local setting = self:GetSetting();
+    if not setting then
+        return;
+    end
+
+	local options = initializer.GetOptions and initializer:GetOptions() or nil;
 	local initTooltip = Settings.CreateOptionsInitTooltip(setting, initializer:GetName(), initializer:GetTooltip(), options);
 
 	self.Checkbox:Init(setting:GetValue(), initTooltip);
@@ -298,7 +322,7 @@ function WilduSettingsCheckboxControlMixin:EvaluateState()
 	local enabled = WilduSettingsControlMixin.IsEnabled(self);
 
 	local initializer = self:GetElementData();
-	local options = initializer:GetOptions();
+	local options = initializer.GetOptions and initializer:GetOptions() or nil;
 	if options then
 		local optionData = type(options) == 'function' and options() or options;
 		local value = self:GetSetting():GetValue();
@@ -316,4 +340,115 @@ end
 function WilduSettingsCheckboxControlMixin:Release()
 	self.Checkbox:Release();
 	WilduSettingsControlMixin.Release(self);
+end
+
+
+-------------------------------------------------
+-- Expandable Section (collapsible header) support
+-------------------------------------------------
+
+-- This mirrors SettingsExpandableSectionMixin from Blizzard_SettingControls.lua
+WilduSettingsExpandableSectionMixin = {};
+
+function WilduSettingsExpandableSectionMixin:OnLoad()
+	-- Expect a Button child with a Text fontstring like Blizzard's template
+	self.Button:SetScript("OnClick", function(button, buttonName, down)
+		local initializer = self:GetElementData();
+		local data = initializer.data;
+		data.expanded = not data.expanded;
+
+		-- Let the initializer/layout recompute height; we just change visual state.
+		self:OnExpandedChanged(data.expanded);
+	end);
+end
+
+function WilduSettingsExpandableSectionMixin:OnExpandedChanged(expanded)
+	-- Implement your visual feedback here if you add an arrow/plus-minus texture.
+	-- For now we just set a simple highlight state on the button text.
+	if expanded then
+		self.Button.Text:SetTextColor(HIGHLIGHT_FONT_COLOR:GetRGB());
+	else
+		self.Button.Text:SetTextColor(NORMAL_FONT_COLOR:GetRGB());
+	end
+end
+
+function WilduSettingsExpandableSectionMixin:Init(initializer)
+	local data = initializer.data;
+	self.Button.Text:SetText(data.name or "");
+	-- Ensure initial visual state matches expanded flag (default collapsed = false)
+	self:OnExpandedChanged(data.expanded == true);
+end
+
+-- Factory for section initializer, like CreateSettingsExpandableSectionInitializer
+function ns.WilduSettings_CreateExpandableSectionInitializer(name)
+	-- Reuse Blizzard's SettingsExpandableSectionInitializer type:
+	--   local initializer = CreateFromMixins(SettingsExpandableSectionInitializer);
+	--   initializer:Init("SettingsExpandableSectionTemplate");
+	--   initializer.data = { name = name };
+	-- See Blizzard_SettingControls.lua
+	local initializer = CreateFromMixins(SettingsExpandableSectionInitializer);
+	initializer:Init("SettingsExpandableSectionTemplate");
+	initializer.data = { name = name, expanded = false };
+	return initializer;
+end
+
+
+-------------------------------------------------
+-- Expandable Section (collapsible header) support
+-------------------------------------------------
+
+WilduSettingsExpandableSectionInitializer = CreateFromMixins(ScrollBoxFactoryInitializerMixin, SettingsSearchableElementMixin)
+
+function WilduSettingsExpandableSectionInitializer:Init(frameTemplate, name)
+    ScrollBoxFactoryInitializerMixin.Init(self, frameTemplate)
+    self.data = {
+        name = name,
+        expanded = true,
+        extent = 24,
+    }
+end
+
+function WilduSettingsExpandableSectionInitializer:GetExtent()
+    return self.data.extent
+end
+
+function WilduSettingsExpandableSectionInitializer:GetName()
+    return self.data.name
+end
+
+function WilduSettingsExpandableSectionInitializer:IsExpanded()
+    return self.data.expanded
+end
+
+function ns.WilduSettings_CreateExpandableSectionInitializer(name)
+    local initializer = CreateFromMixins(WilduSettingsExpandableSectionInitializer)
+    initializer:Init("WilduSettings_ExpandableSectionTemplate", name)
+    return initializer
+end
+
+WilduSettingsExpandableSectionMixin = {}
+
+function WilduSettingsExpandableSectionMixin:OnLoad()
+    self.Button:SetScript("OnClick", function()
+        local initializer = self:GetElementData()
+        local data = initializer.data
+        data.expanded = not data.expanded
+
+        self:OnExpandedChanged(data.expanded)
+        SettingsPanel:FullRefreshIfVisible()
+    end)
+end
+
+function WilduSettingsExpandableSectionMixin:OnExpandedChanged(expanded)
+    if expanded then
+        self.Button.Text:SetTextColor(HIGHLIGHT_FONT_COLOR:GetRGB())
+    else
+        self.Button.Text:SetTextColor(DISABLED_FONT_COLOR:GetRGB())
+    end
+end
+
+function WilduSettingsExpandableSectionMixin:Init(initializer)
+    local data = initializer.data
+    self.Button.Text:SetText(data.name or "")
+    self:OnExpandedChanged(data.expanded)
 end

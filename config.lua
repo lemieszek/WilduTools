@@ -38,8 +38,6 @@ ns.DEFAULT_SETTINGS = {
         blizzUI_resizeBlizzardObjectiveTrackerRange = 1,
 
         cooldownManager_centerBuffIcons = false,
-        cooldownManager_centerBuffIconsAnchor = false,
-        cooldownManager_centerEssentialAnchor = false,
 
         general_alwaysEnableAllActionBars = false,
         general_defaultScaling = "NoScaling",
