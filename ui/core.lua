@@ -280,7 +280,9 @@ end
 -- VISIBILITY DRIVER HELPERS
 -- ============================================================================
 
+-- Forward declaration for visibility driver function
 local ApplyVisibilityDriverToFrame
+
 local visiblityDriverPostCombatFrame = CreateFrame("Frame", nil, UIParent)
 visiblityDriverPostCombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 visiblityDriverPostCombatFrame.delayedApplications = {}
@@ -302,7 +304,7 @@ end)
 ---Example expressions:
 ---  "[target=target,exists] show; hide"
 ---  "[advflyable, mounted] show; [advflyable, stance:3] show; hide"
-ApplyVisibilityDriverToFrame = function (frame, expression, shouldHideInCombat)
+function ApplyVisibilityDriverToFrame(frame, expression, shouldHideInCombat)
     if not frame then return end
     if InCombatLockdown() then
         if shouldHideInCombat then
