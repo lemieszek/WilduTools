@@ -1,8 +1,14 @@
 local _, ns = ...
+
+--- Update Target Macro (UTM) Module
+--- Provides utilities for creating and updating targeting macros programmatically
+--- Allows quick creation of macros that target specific units by name
 local UTM = {}
 ns.UTM = UTM
 
--- Static popup dialogs
+-- ============================================================================
+-- STATIC POPUP DIALOGS
+-- ============================================================================
 StaticPopupDialogs["SETUP_UTM"] = {
     text = 'Setup UTM macros',
     hasEditBox = false,

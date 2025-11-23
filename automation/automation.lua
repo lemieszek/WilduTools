@@ -1,9 +1,14 @@
 local _, ns = ...
+
+--- Automation Module
+--- Provides automated gameplay conveniences: auto-gossip, role acceptance, and group invites
 local Automation = {}
 ns.Automation = Automation
 local addon = LibStub("AceAddon-3.0"):GetAddon("WilduTools")
 local DEBUG = ns.DEBUG
 
+---@class AutomationState
+---@field gossip boolean Whether gossip automation is initialized
 Automation.initialized = {
     gossip = false
 }
@@ -41,10 +46,12 @@ local function handleGossipSelection(optionIndex)
     end
 end
 
--- Main gossip handler
+---Handle gossip automation
+---Automatically selects gossip options when only one is available, with special handling for specific NPCs
+---Respects modifier keys (hold to disable) and checks for active/available quests
 function Automation:HandleGossip()
     -- Check if feature is enabled
-    if not ns.db.profile.automation_gossipEnabled then
+    if not ns.Addon.db.profile.automation_gossipEnabled then
         return
     end
 
@@ -114,6 +121,9 @@ end
 
 local Automation_InitializeGossips_Throttle = nil
 -- Initialize the gossips automation
+---Initialize gossip automation system
+---Sets up hooks to automatically handle gossip dialogs when shown
+---Only initializes once to avoid duplicate hooks
 function Automation:InitializeGossips()
   DEBUG.startDebugTimer("AUTOMATION_INIT_GOSSIPS_START")
   
@@ -132,13 +142,14 @@ function Automation:InitializeGossips()
     end
     Automation_InitializeGossips_Throttle = GetTime()
     
-    self:HandleGossip()
+    Automation:HandleGossip()
   end)
   
   DEBUG.checkpointDebugTimer("AUTOMATION_INIT_GOSSIPS_DONE", "AUTOMATION_INIT_GOSSIPS_START")
 end
 
-
+---Initialize automatic role acceptance
+---Automatically accepts the role check popup when enabled
 function Automation:InitAutoAcceptRole()
     DEBUG.startDebugTimer("AUTOMATION_INIT_AUTOACCEPT_ROLE_START")
     if ns.db.profile.automation_autoAcceptGroupRoleEnabled then
@@ -184,6 +195,9 @@ groupInviteFrame:SetScript("OnEvent", function()
     end
 end)
 
+---Initialize automatic group invite acceptance
+---Automatically accepts group invites when enabled
+---Handles both regular and cross-realm invites
 function Automation:InitAutoAcceptGroupInvite()
     DEBUG.startDebugTimer("AUTOMATION_INIT_AUTOACCEPT_INVITE_START")
     if ns.db.profile.automation_autoAcceptGroupInviteEnabled then
@@ -198,7 +212,9 @@ function Automation:InitAutoAcceptGroupInvite()
     DEBUG.checkpointDebugTimer("AUTOMATION_INIT_AUTOACCEPT_INVITE_DONE", "AUTOMATION_INIT_AUTOACCEPT_INVITE_START")
 end
 
-
+---Set druid form preservation behavior
+---When enabled, prevents form cancellation during combat
+---@param enabled boolean True to enable form preservation, false to disable
 function Automation:SetFormPreservation(enabled)
     DEBUG.startDebugTimer("AUTOMATION_SET_FORM_PRESERVATION_START")
     if enabled then

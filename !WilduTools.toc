@@ -8,28 +8,43 @@
 
 loadLibs.xml
 Media/loadMedia.lua
-config.lua
 
-
-debug.lua
-API.lua
+# Core Modules
+core/config.lua
+core/debug.lua
+core/api.lua
 
 modules/Wildu_SettingControls.xml
 
+# Core UI Helpers
+ui/core.lua
+
+# UI Components
+ui/components/range_frame.lua
+ui/components/mount_indicator.lua
+ui/components/spell_on_cd.lua
+ui/components/crosshair.lua
+ui/components/combat_indicators.lua
+
+# WilduUI Main Module (delegates to components)
+ui/wildu_ui.lua
+
+# Automation Modules
+automation/automation.lua
+automation/updateTargetMacro.lua
+
+# Other Modules
 modules/actionBars.lua
 modules/addons.lua
-modules/automation.lua
 modules/control_behavior.lua
 modules/cooldownManager.lua
 modules/cvars.lua
 modules/minimap.lua
 modules/nameplates.lua
 modules/ui.lua
-modules/updateTargetMacro.lua
 
 modules/wildu_settings_frames.xml
 modules/wildu_settings.lua
-modules/wildu_ui.lua
 
 
 !WilduTools.lua

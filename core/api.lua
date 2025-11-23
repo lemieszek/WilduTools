@@ -11,21 +11,35 @@ local DEBUG = ns.DEBUG
 
 
 -- ============================================================================
--- HELPER FUNCTIONS
+-- UI HELPER FUNCTIONS
 -- ============================================================================
 
+---Open the Click Cast Binding UI
+---Loads and toggles the Blizzard click binding interface for click-casting
 function API:OpenClickCastBinding()
     C_AddOns.LoadAddOn('Blizzard_ClickBindingUI')
     ClickBindingFrame_Toggle()
 end
 
+---Open the Quick Keybind Mode UI
+---Shows the Blizzard quick keybind panel for binding actions
 function API:OpenQuickKeybindMode()
     ShowUIPanel(QuickKeybindFrame)
 end
 
+-- ============================================================================
+-- TIMER & DELAY FUNCTIONS
+-- ============================================================================
+
 local waitTable = {}
 local waitFrame = nil
 
+---Schedule a function to be called after a delay
+---Alternative to C_Timer.After that doesn't require secure context
+---@param delay number Delay in seconds before calling the function
+---@param func function Function to call after delay
+---@param ... any Arguments to pass to the function
+---@return boolean success True if scheduled successfully, false if invalid parameters
 function API:wait(delay, func, ...)
   if(type(delay)~="number" or type(func)~="function") then
     return false;
@@ -53,8 +67,11 @@ function API:wait(delay, func, ...)
   tinsert(waitTable,{delay,func,{...}});
   return true;
 end
----- WAIT END
 
+---Create and show a Blizzard-style context menu
+---@param ownerRegion Frame The frame that owns this menu
+---@param schematic table Menu structure definition with tag and objects array
+---@param contextData? table Optional context data to pass to menu handlers
 function API.ShowBlizzardMenu(ownerRegion, schematic, contextData)
     contextData = contextData or {};
 
@@ -187,6 +204,11 @@ end
 ---Get minimum and maximum range for a target
 ---@param unit string UnitID to check range for (e.g., "target")
 ---@param checkVisible boolean  
+---Get the range to a unit
+---Uses LibRangeCheck to determine distance based on spell/item ranges
+---@param unit string UnitID (e.g., "target", "player", "focus")
+---@return number? minRange Minimum range in yards, or nil if out of range
+---@return number? maxRange Maximum range in yards, or nil if exact range unknown
 function API:GetRange(unit)
   return LibRangeCheck:GetRange(unit, true);
 end
@@ -251,7 +273,7 @@ local CLASS_MAX_RANGES = {
 
 local function GetRangeColor(range, playerClass)
     -- Default to 40 yards if class unknown
-    local maxRange = CLASS_MAX_RANGES[classFilename] or 40
+    local maxRange = CLASS_MAX_RANGES[playerClass] or 40
     
     if range <= 5 then
         return RANGE_COLORS.MELEE
@@ -276,6 +298,12 @@ local function GetRangeColor(range, playerClass)
     return RANGE_COLORS.OUT_OF_RANGE
 end
 
+---Colorize range text based on distance
+---Colors range text appropriately for the player's class abilities
+---@param rangeText string The range text to colorize (e.g., "10 - 20")
+---@param range number The range value in yards
+---@param playerClass? string Player's class (unused parameter, can be removed)
+---@return string colorizedText The range text wrapped in color codes
 function API:ColorizeRange(rangeText, range, playerClass)
     local color = GetRangeColor(range, playerClass)
     local hex = string.format("%02x%02x%02x", 
@@ -463,6 +491,7 @@ end
         end
     end
 
+---Available nine-slice layout styles
 local NineSliceLayouts = {
     WhiteBorder = true,
     WhiteBorderBlackBackdrop = true,
@@ -474,6 +503,11 @@ local NineSliceLayouts = {
     NineSlice_GenericBox_Black_Shadowed = true,
 };
 
+---Create a nine-slice frame with custom border texture
+---Nine-slice frames scale properly without distorting corners
+---@param parent Frame Parent frame to attach the nine-slice to
+---@param layoutName? string Layout name from NineSliceLayouts (default: "WhiteBorder")
+---@return Frame nineSliceFrame Frame with SliceFrameMixin methods (SetCornerSize, CoverParent, etc.)
 function API:CreateNineSliceFrame(parent, layoutName)
     if not (layoutName and NineSliceLayouts[layoutName]) then
         layoutName = "WhiteBorder";
