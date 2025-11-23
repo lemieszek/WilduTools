@@ -45,7 +45,7 @@ function RangeFrame.Initialize()
         local min, max = API:GetRange("target")
         if min or max then
             local rangeText = max and string.format("%d - %d", min, max) or string.format("%d+", min)
-            rangeText = API:ColorizeRange(rangeText, max and max or min, playerClass)
+            rangeText = API:ColorizeRange(rangeText, max and max or min, classFilename)
             rangeFrame.text:SetText(rangeText)
             rangeFrame:SetAlpha(1)
         else

@@ -273,7 +273,7 @@ local CLASS_MAX_RANGES = {
 
 local function GetRangeColor(range, playerClass)
     -- Default to 40 yards if class unknown
-    local maxRange = CLASS_MAX_RANGES[classFilename] or 40
+    local maxRange = CLASS_MAX_RANGES[playerClass] or 40
     
     if range <= 5 then
         return RANGE_COLORS.MELEE
