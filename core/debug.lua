@@ -167,12 +167,9 @@ function DEBUG.initializeSpikeDetection()
     end
     
     -- Sample every SPIKE_SAMPLE_INTERVAL ms
-    print("Condition: ", (currentTime - lastSampleTime) * 1000, ">=", SPIKE_SAMPLE_INTERVAL)
     if (currentTime - lastSampleTime) * 1000 >= SPIKE_SAMPLE_INTERVAL then
       local deltaTime = (currentTime - lastFrameTime) * 1000
       
-      -- DevTools_Dump(currentTime, lastFrameTime, deltaTime)
-      print("Current time:", currentTime, "Last time: ", lastFrameTime, "Delta:", deltaTime)
       table.insert(DEBUG.spikeSamples, {
         time = timeSinceInit,
         delta = deltaTime / 1000,

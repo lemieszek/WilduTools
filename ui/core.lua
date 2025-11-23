@@ -283,15 +283,15 @@ end
 -- Forward declaration for visibility driver function
 local ApplyVisibilityDriverToFrame
 
-local visiblityDriverPostCombatFrame = CreateFrame("Frame", nil, UIParent)
-visiblityDriverPostCombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-visiblityDriverPostCombatFrame.delayedApplications = {}
-visiblityDriverPostCombatFrame:SetScript("OnEvent", function(_, event)
+local visibilityDriverPostCombatFrame = CreateFrame("Frame", nil, UIParent)
+visibilityDriverPostCombatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+visibilityDriverPostCombatFrame.delayedApplications = {}
+visibilityDriverPostCombatFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_ENABLED" and not InCombatLockdown() then
-        for i, application in ipairs(visiblityDriverPostCombatFrame.delayedApplications) do
+        for i, application in ipairs(visibilityDriverPostCombatFrame.delayedApplications) do
             ApplyVisibilityDriverToFrame(application.frame, application.expression)
         end
-        visiblityDriverPostCombatFrame.delayedApplications = {}
+        visibilityDriverPostCombatFrame.delayedApplications = {}
     end
 end)
 
@@ -310,7 +310,7 @@ function ApplyVisibilityDriverToFrame(frame, expression, shouldHideInCombat)
         if shouldHideInCombat then
             frame:Hide()
         end
-        table.insert(visiblityDriverPostCombatFrame.delayedApplications, {
+        table.insert(visibilityDriverPostCombatFrame.delayedApplications, {
             frame = frame,
             expression = expression
         })

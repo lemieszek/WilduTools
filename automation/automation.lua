@@ -51,7 +51,7 @@ end
 ---Respects modifier keys (hold to disable) and checks for active/available quests
 function Automation:HandleGossip()
     -- Check if feature is enabled
-    if not ns.db.profile.automation_gossipEnabled then
+    if not ns.Addon.db.profile.automation_gossipEnabled then
         return
     end
 
@@ -142,7 +142,7 @@ function Automation:InitializeGossips()
     end
     Automation_InitializeGossips_Throttle = GetTime()
     
-    self:HandleGossip()
+    Automation:HandleGossip()
   end)
   
   DEBUG.checkpointDebugTimer("AUTOMATION_INIT_GOSSIPS_DONE", "AUTOMATION_INIT_GOSSIPS_START")
